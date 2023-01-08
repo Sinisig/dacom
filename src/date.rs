@@ -179,6 +179,59 @@ impl std::error::Error for ParseDateError {
 
 
 impl Date {
+   /// Internal helper which checks if a string
+   /// follows proper date formatting.
+   fn text_validate(
+      text  : & str,
+   ) -> bool {
+      use lazy_static::lazy_static;
+      use regex::Regex;
+
+      lazy_static!{
+         // Month Day(th), Year
+         static ref RX_MONTH_DAY_YEAR  : Regex = Regex::new(r"(?x)
+            ^                          # Start of string
+            ([[:alpha:]]+)\s*          # Month
+            (\d{1,2})(?:th)?\s*,*\s*   # Day
+            ([+-]?\d{4})               # Year
+            $                          # End of string
+         ").unwrap();
+      }
+
+      return RX_MONTH_DAY_YEAR.is_match(text);
+   }
+
+   /// Internal helper which returns string slices from a
+   /// string corresponding to date information.
+   /// The tuples are in order Day, Month, and Year.
+   fn text_isolate<'t>(
+      text  : &'t str,
+   ) -> Vec<(String, String, String)> {
+      use lazy_static::lazy_static;
+      use regex::Regex;
+
+      lazy_static!{
+         // Month Day(th), Year
+         static ref RX_MONTH_DAY_YEAR  : Regex = Regex::new(r"(?x)
+            ([[:alpha:]]+)\s*          # Month
+            (\d{1,2})(?:th)?\s*,*\s*   # Day
+            ([+-]?\d{4})               # Year
+         ").unwrap();
+      }
+
+      let mut dates = Vec::new();
+      for cap in RX_MONTH_DAY_YEAR.captures_iter(text) {
+         // String copying is bad. Manage your lifetimes, dammit!
+         let day     = String::from(&cap[1]);
+         let month   = String::from(&cap[0]);
+         let year    = String::from(&cap[2]);
+         let date = (day, month, year);
+         dates.push(date);
+      }
+
+      return dates;
+   }
+
    /// Creates a new Date object.  Negative
    /// years are considered as dates Before
    /// Common Era (BCE), otherwise known as
@@ -280,28 +333,30 @@ impl std::str::FromStr for Date {
    type Err = ParseDateError;
 
    fn from_str(string : & str) -> Result<Self, Self::Err> {
-      use lazy_static::lazy_static;
-      use regex::Regex;
-      
-      // Regex parsers for the many different date formattings, fuck me
-      lazy_static!{
-         static ref RX_MONTH_DAY_YEAR  : Regex = Regex::new(r"(?x)
-            ([[:alpha:]]+)\s*          # Month string
-            (\d{1,2})(?:th)?\s*,*\s*   # Day
-            (\d{4})                    # Year
-         ").unwrap();
-         //static ref RX_MMDDYYYY        : Regex = Regex::new(r"(?x)
-         //   # TODO: Implement
-         //").unwrap();
-         //static ref RX_DAY_MONTH_YEAR  : Regex = Regex::new(r"(?x)
-         //   # TODO: Implement
-         //").unwrap();
-         //static ref RX_YYYYMMDD        : Regex = Regex::new(r"(?x)
-         //   # TODO: Implement
-         //").unwrap();
+      // Make sure the string is a date
+      if Self::text_validate(string) == false {
+         return Err(ParseDateError::InvalidFormatting);
       }
 
-      return Err(ParseDateError::InvalidFormatting);
+      // Break into month, day, and year
+      let (day, month, year) = &Self::text_isolate(string)[0];
+
+      // Parse each into their respective types
+      let day   = match day.parse::<usize>() {
+         Ok(d)    => d,
+         Err(_)   => return Err(ParseDateError::InvalidFormatting),
+      };
+      let month = match month.parse::<Month>() {
+         Ok(m)    => m,
+         Err(_)   => return Err(ParseDateError::InvalidFormatting),
+      };
+      let year  = match year.parse::<isize>() {
+         Ok(y)    => y,
+         Err(_)   => return Err(ParseDateError::InvalidFormatting),
+      };
+
+      // Parse into a Date struct
+      return Ok(Self::new(day, month, year)?);
    }
 }
 

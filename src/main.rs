@@ -26,8 +26,9 @@ fn date_directory_sorted(
          let text = String::from_utf8_lossy(&text);
 
          // Search for all dates in the text and sort them
-         let mut found_dates = dacom::Date::from_text_multi(&text);
-         found_dates.sort_unstable();
+         let found_dates = dacom::Date::from_text_multi_sorted_by(
+            &text, |d1, d2| d1.cmp(d2)
+         );
 
          // Add the result to the running total if we found any
          if found_dates.len() != 0 {

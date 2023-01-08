@@ -241,13 +241,29 @@ impl Date {
 
    /// Searches an entire text string for matching
    /// dates and attempts to parse them into a Date
-   /// struct, which is then sorted into a vector.
+   /// struct.
    pub fn from_text_multi(
       text  : & str,
    ) -> Vec<Self> {
+      return Self::from_text_multi_sorted_by(
+         text,
+         |_, _| std::cmp::Ordering::Equal,
+      );
+   }
+
+   /// Searches an entire text string for matching
+   /// dates and attempts to parse them into a Date
+   /// struct, which is then sorted into a vector
+   /// using the given comparison algorithm.
+   pub fn from_text_multi_sorted_by<F>(
+      text     : & str,
+      compare  : F,
+   ) -> Vec<Self>
+   where F: FnMut(&Date, &Date) -> std::cmp::Ordering {
       use lazy_static::lazy_static;
       use regex::Regex;
 
+      // Regexes for parsing
       lazy_static!{
          // Month Day(th), Year
          static ref RX_MONTH_DAY_YEAR  : Regex = Regex::new(r"(?x)
@@ -280,10 +296,13 @@ impl Date {
          };
 
          // Add the date to the list
-         // TODO: Sorting
          dates.push(date);
       }
 
+      // Sort the dates list
+      dates.sort_unstable_by(compare);
+
+      // Return successfully
       return dates;
    }
 

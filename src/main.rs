@@ -16,13 +16,12 @@ fn date_directory(
 
       } else {
          // Read the file text
-         let text = match std::fs::read_to_string(&path) {
-            Ok(v)    => v,
-            Err(_)   => String::new(),
-         };
+         let text = std::fs::read(&path)?;
+         let text = String::from_utf8_lossy(&text);
 
-         // Search for all dates in the text
-         let found_dates = dacom::Date::from_string(&text);
+         // Search for all dates in the text and sort them
+         let mut found_dates = dacom::Date::from_string(&text);
+         found_dates.sort_unstable();
 
          // Add the result to the running total if we found any
          if found_dates.len() != 0 {

@@ -62,25 +62,46 @@ fn date_directory_sorted(
    return Ok(dates);
 }
 
+// Formats the resulting dating info into readable data
+// which can be analyzed
+fn format_results(
+   data : Vec<(String, Vec<dacom::Date>)>,
+) -> String {
+   let mut write_buffer = String::new();
+
+   for (file, dating) in data {
+      // File path
+      write_buffer += &format!("{file}\n");
+
+      for date in dating {
+         // Each individual date
+         write_buffer += &format!("   {date}\n");
+      }
+
+      // Newline for next file
+      write_buffer += "\n";
+   }
+
+   return write_buffer;
+}
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
    let mut args = std::env::args();
    args.next();   // Skips the executable path
 
    for arg in args {
+      const SAVE_PATH : & str = "results.txt";
+
       println!("Seaching directory {arg}");
-      let search_results = date_directory_sorted(&arg)?;
+      
+      let search_results = format_results(date_directory_sorted(&arg)?);
 
       println!("Done! Here are the results:");
       println!("");
-      for (file, dates) in &search_results {
-         println!("{file}");
-         for date in dates {
-            println!("   {date}");   
-         }
-         println!("");
-      }
-
+      println!("{search_results}");
       println!("");
+      println!("Saving results to {SAVE_PATH}");
+      std::fs::write(SAVE_PATH, &search_results)?;
    }
 
    return Ok(());

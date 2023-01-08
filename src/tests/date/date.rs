@@ -99,7 +99,27 @@ fn methods() {
 }
 
 #[test]
-fn from_string() {
+fn from_text_single() {
+   use crate::date::{Date, Month::*};
+   
+   // TODO: More rigorous testing, practical uses
+   // have already yielded bugs in the regex.
+   
+   assert!("February 1, 2000"       .parse::<Date>().unwrap() == Date::new(1, February,   2000  ).unwrap());
+   assert!("February 1st, 2000"     .parse::<Date>().unwrap() == Date::new(1, February,   2000  ).unwrap());
+
+   assert!(""           .parse::<Date>().is_err() == true);
+   assert!("     "      .parse::<Date>().is_err() == true);
+   assert!("1st, 2000"  .parse::<Date>().is_err() == true);
+   assert!("January 1st".parse::<Date>().is_err() == true);
+   assert!("20"         .parse::<Date>().is_err() == true);
+   assert!("November"   .parse::<Date>().is_err() == true);
+
+   return;
+}
+
+#[test]
+fn from_text_multi() {
    use crate::date::{Date, Month::*};
 
    let s00 = r"
@@ -117,7 +137,7 @@ fn from_string() {
       Date::new(28, November, 2003).unwrap(),
    ];
 
-   assert!(Date::from_string(s00) == r00);
+   assert!(Date::from_text_multi(s00) == r00);
 
    return;
 }
@@ -361,18 +381,7 @@ fn trait_std_fmt_display() {
 
 #[test]
 fn trait_std_str_fromstr() {
-   use crate::date::{Date, Month::*};
-   
-   assert!("February 1, 2000"       .parse::<Date>().unwrap() == Date::new(1, February,   2000  ).unwrap());
-   assert!("February 1st, 2000"     .parse::<Date>().unwrap() == Date::new(1, February,   2000  ).unwrap());
-
-   assert!(""           .parse::<Date>().is_err() == true);
-   assert!("     "      .parse::<Date>().is_err() == true);
-   assert!("1st, 2000"  .parse::<Date>().is_err() == true);
-   assert!("January 1st".parse::<Date>().is_err() == true);
-   assert!("20"         .parse::<Date>().is_err() == true);
-   assert!("November"   .parse::<Date>().is_err() == true);
-
+   from_text_single();
    return;
 }
 

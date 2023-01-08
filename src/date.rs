@@ -242,7 +242,7 @@ impl Date {
    /// Searches an entire text string for matching
    /// dates and attempts to parse them into a Date
    /// struct, which is then sorted into a vector.
-   pub fn from_text_search(
+   pub fn from_text_multi(
       text  : & str,
    ) -> Vec<Self> {
       use lazy_static::lazy_static;
@@ -280,6 +280,7 @@ impl Date {
          };
 
          // Add the date to the list
+         // TODO: Sorting
          dates.push(date);
       }
 

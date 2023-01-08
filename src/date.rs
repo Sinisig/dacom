@@ -191,54 +191,95 @@ impl std::error::Error for ParseDateError {
 
 
 impl Date {
-   /// Internal helper which checks if a string
-   /// follows proper date formatting.
-   fn text_validate(
+   /// Parses text containing a single date string
+   /// into a Date struct.  If the text isn't a
+   /// single date adhering to the proper formatting,
+   /// an error is returned instead.
+   pub fn from_text_single(
       text  : & str,
-   ) -> bool {
+   ) -> Result<Self, ParseDateError> {
       use lazy_static::lazy_static;
       use regex::Regex;
 
       lazy_static!{
          // Month Day(th), Year
          static ref RX_MONTH_DAY_YEAR  : Regex = Regex::new(r"(?x)
-            ^                                # Start of string
-            [[:alpha:]]+\.?\s*               # Month
-            \d{1,2}(?:st|nd|rd|th)?\s*,?\s*  # Day
-            [+-]?\d{4}                       # Year
-            $                                # End of string
+            ^                                      # Start of string
+            (?P<m>[[:alpha:]]+)\.?\s*              # Month
+            (?P<d>\d{1,2})(?:st|nd|rd|th)?\s*,?\s* # Day
+            (?P<y>[+-]?\d+)                        # Year
+            $                                      # End of string
          ").unwrap();
       }
 
-      return RX_MONTH_DAY_YEAR.is_match(text);
+      // Attempt to run the regex parser and get the captures
+      let captures = match RX_MONTH_DAY_YEAR.captures(text) {
+         Some(cap)   => cap,
+         None        => return Err(ParseDateError::InvalidFormatting),
+      };
+
+      // Parse the found month, day, and year
+      let day = match captures["d"].parse() {
+         Ok(d)    => d,
+         Err(_)   => return Err(ParseDateError::InvalidDayFormatting),
+      };
+      let month = match captures["m"].parse() {
+         Ok(m)    => m,
+         Err(_)   => return Err(ParseDateError::InvalidMonthFormatting),
+      };
+      let year = match captures["y"].parse() {
+         Ok(y)    => y,
+         Err(_)   => return Err(ParseDateError::InvalidYearFormatting),
+      };
+
+      // Attempt to create a new Date struct from the parsed information
+      let date = Self::new(day, month, year)?;
+
+      // Return success
+      return Ok(date);
    }
 
-   /// Internal helper which returns string slices from a
-   /// string corresponding to date information.
-   /// The tuples are in order Day, Month, and Year.
-   fn text_isolate<'t>(
-      text  : &'t str,
-   ) -> Vec<(String, String, String)> {
+   /// Searches an entire text string for matching
+   /// dates and attempts to parse them into a Date
+   /// struct, which is then sorted into a vector.
+   pub fn from_text_search(
+      text  : & str,
+   ) -> Vec<Self> {
       use lazy_static::lazy_static;
       use regex::Regex;
 
       lazy_static!{
          // Month Day(th), Year
          static ref RX_MONTH_DAY_YEAR  : Regex = Regex::new(r"(?x)
-            ([[:alpha:]]+\.?)\s*                # Month
-            (\d{1,2})(?:st|nd|rd|th)?\s*,?\s*   # Day
-            ([+-]?\d{4})                        # Year
+            (?P<m>[[:alpha:]]+)\.?\s*              # Month
+            (?P<d>\d{1,2})(?:st|nd|rd|th)?\s*,?\s* # Day
+            (?P<y>[+-]?\d+)                        # Year
          ").unwrap();
       }
 
       let mut dates = Vec::new();
       for cap in RX_MONTH_DAY_YEAR.captures_iter(text) {
-         // String copying is bad. Manage your lifetimes, dammit!
-         let day     = String::from(&cap[2]);
-         let month   = String::from(&cap[1]);
-         let year    = String::from(&cap[3]);
+         // Parse matched text into day, month, year
+         let day = match cap["d"].parse() {
+            Ok(d)    => d,
+            Err(_)   => continue,
+         };
+         let month = match cap["m"].parse() {
+            Ok(m)    => m,
+            Err(_)   => continue,
+         };
+         let year = match cap["y"].parse() {
+            Ok(y)    => y,
+            Err(_)   => continue,
+         };
 
-         let date = (day, month, year);
+         // Try to create a new Date
+         let date = match Self::new(day, month, year) {
+            Ok(d)    => d,
+            Err(_)   => continue,
+         };
+
+         // Add the date to the list
          dates.push(date);
       }
 
@@ -282,40 +323,6 @@ impl Date {
          month : month,
          year  : year,
       };
-   }
-
-   /// Searches a text string for all dates and
-   /// stores them in an array.
-   pub fn from_string(
-      text  : &str,
-   ) -> Vec<Self> {
-      let mut dates = Vec::new();
-      
-      for (day, month, year) in Self::text_isolate(text) {
-         // Attempt to parse into data
-         let day   = if let Ok(day) = day.parse::<usize>() {
-            day
-         } else {
-            continue;
-         };
-         let month = if let Ok(month) = month.parse::<Month>() {
-            month
-         } else {
-            continue;
-         };
-         let year  = if let Ok(year) = year.parse::<isize>() {
-            year
-         } else {
-            continue;
-         };
-
-         // Attempt to create a new Date.
-         if let Ok(date) = Self::new(day, month, year) {
-            dates.push(date);
-         }
-      }
-
-      return dates;
    }
 
    /// Gets the stored day of the month.
@@ -385,31 +392,8 @@ impl std::fmt::Display for Date {
 impl std::str::FromStr for Date {
    type Err = ParseDateError;
 
-   fn from_str(string : & str) -> Result<Self, Self::Err> {
-      // Make sure the string is a date
-      if Self::text_validate(string) == false {
-         return Err(ParseDateError::InvalidFormatting);
-      }
-
-      // Break into month, day, and year
-      let (day, month, year) = &Self::text_isolate(string)[0];
-
-      // Parse each into their respective types
-      let day   = match day.parse::<usize>() {
-         Ok(d)    => d,
-         Err(_)   => return Err(ParseDateError::InvalidDayFormatting),
-      };
-      let month = match month.parse::<Month>() {
-         Ok(m)    => m,
-         Err(_)   => return Err(ParseDateError::InvalidMonthFormatting),
-      };
-      let year  = match year.parse::<isize>() {
-         Ok(y)    => y,
-         Err(_)   => return Err(ParseDateError::InvalidYearFormatting),
-      };
-
-      // Parse into a Date struct
-      return Ok(Self::new(day, month, year)?);
+   fn from_str(text : & str) -> Result<Self, Self::Err> {
+      return Self::from_text_single(text);
    }
 }
 

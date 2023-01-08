@@ -24,8 +24,10 @@ fn date_directory(
          // Search for all dates in the text
          let found_dates = dacom::Date::from_string(&text);
 
-         // Add the result to the running total
-         dates.push((String::from(path), found_dates));
+         // Add the result to the running total if we found any
+         if found_dates.len() != 0 {
+            dates.push((String::from(path), found_dates));
+         }
       }
    }
 
@@ -44,8 +46,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
       for (file, dates) in &search_results {
          println!("{file}:");
          for date in dates {
-            println!("\t{date}");
+            println!("\t{date}");   
          }
+         println!("");
       }
 
       println!("");

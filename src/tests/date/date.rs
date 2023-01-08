@@ -108,7 +108,7 @@ fn from_string() {
       Revision date: January   7th, 2023
       This is some more random unrelated text!
       Blah blah blah...
-      My birthday:   November 28, 2003
+      My birthday:   nov. 28, 2003
    ";
    
    let r00 = vec![

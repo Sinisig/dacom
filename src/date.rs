@@ -205,7 +205,7 @@ impl Date {
             ^                                # Start of string
             [[:alpha:]]+\.?\s*               # Month
             \d{1,2}(?:st|nd|rd|th)?\s*,?\s*  # Day
-            [+-]?\d+                         # Year
+            [+-]?\d{4}                       # Year
             $                                # End of string
          ").unwrap();
       }
@@ -227,7 +227,7 @@ impl Date {
          static ref RX_MONTH_DAY_YEAR  : Regex = Regex::new(r"(?x)
             ([[:alpha:]]+\.?)\s*                # Month
             (\d{1,2})(?:st|nd|rd|th)?\s*,?\s*   # Day
-            ([+-]?\d+)                          # Year
+            ([+-]?\d{4})                        # Year
          ").unwrap();
       }
 

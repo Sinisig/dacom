@@ -284,6 +284,40 @@ impl Date {
       };
    }
 
+   /// Searches a text string for all dates and
+   /// stores them in an array.
+   pub fn from_string(
+      text  : &str,
+   ) -> Vec<Self> {
+      let mut dates = Vec::new();
+      
+      for (day, month, year) in Self::text_isolate(text) {
+         // Attempt to parse into data
+         let day   = if let Ok(day) = day.parse::<usize>() {
+            day
+         } else {
+            continue;
+         };
+         let month = if let Ok(month) = month.parse::<Month>() {
+            month
+         } else {
+            continue;
+         };
+         let year  = if let Ok(year) = year.parse::<isize>() {
+            year
+         } else {
+            continue;
+         };
+
+         // Attempt to create a new Date.
+         if let Ok(date) = Self::new(day, month, year) {
+            dates.push(date);
+         }
+      }
+
+      return dates;
+   }
+
    /// Gets the stored day of the month.
    pub fn day_of_month(&self) -> usize {
       return self.day.clone();

@@ -99,6 +99,30 @@ fn methods() {
 }
 
 #[test]
+fn from_string() {
+   use crate::date::{Date, Month::*};
+
+   let s00 = r"
+      This is some random unrelated text!
+      Creation date: December 20th, 2022
+      Revision date: January   7th, 2023
+      This is some more random unrelated text!
+      Blah blah blah...
+      My birthday:   November 28, 2003
+   ";
+   
+   let r00 = vec![
+      Date::new(20, December, 2022).unwrap(),
+      Date::new( 7, January,  2023).unwrap(),
+      Date::new(28, November, 2003).unwrap(),
+   ];
+
+   assert!(Date::from_string(s00) == r00);
+
+   return;
+}
+
+#[test]
 fn trait_std_cmp_partialeq() {
    use crate::date::{Date, Month::*};
    

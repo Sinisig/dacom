@@ -241,7 +241,8 @@ impl Date {
 
    /// Searches an entire text string for matching
    /// dates and attempts to parse them into a Date
-   /// struct.
+   /// struct.  The data is ordered by appearance in
+   /// file from first to last.
    pub fn from_text_multi(
       text  : & str,
    ) -> Vec<Self> {

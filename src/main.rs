@@ -17,6 +17,10 @@ fn date_directory_sorted(
          dates.append(&mut sub_info);
 
       } else {
+         // TODO: Make a command line option
+         // Print the current file being searched
+         println!("Searching {path}...");
+
          // Read the file text
          let text = std::fs::read(&path)?;
          let text = String::from_utf8_lossy(&text);
@@ -90,7 +94,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
    args.next();   // Skips the executable path
 
    for arg in args {
-      const SAVE_PATH : & str = "results.txt";
+      const SAVE_PATH : & str = "dacom_results.txt";
 
       println!("Seaching directory {arg}");
       

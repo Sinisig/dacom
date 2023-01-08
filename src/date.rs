@@ -17,6 +17,15 @@ pub enum ParseDateError {
    /// The input string is not formatted as a date.
    InvalidFormatting,
 
+   /// The input day is not a number.
+   InvalidDayFormatting,
+
+   /// The input month is not a month.
+   InvalidMonthFormatting,
+
+   /// The input year is not a year.
+   InvalidYearFormatting,
+
    /// The day of the month is not valid for the given month and year.
    InvalidDayOfMonth,
 }
@@ -165,8 +174,11 @@ impl std::str::FromStr for Month {
 impl std::fmt::Display for ParseDateError {
    fn fmt(&self, stream : & mut std::fmt::Formatter<'_>) -> std::fmt::Result {
       return write!(stream, "{}", match self {
-         Self::InvalidFormatting => "Text is not a date",
-         Self::InvalidDayOfMonth => "Invalid day of month",
+         Self::InvalidFormatting       => "Text is not a date",
+         Self::InvalidDayFormatting    => "Day is not valid",
+         Self::InvalidMonthFormatting  => "Month is not valid",
+         Self::InvalidYearFormatting   => "Year is not valid",
+         Self::InvalidDayOfMonth       => "Invalid day of month",
       });
    }
 }
@@ -190,11 +202,11 @@ impl Date {
       lazy_static!{
          // Month Day(th), Year
          static ref RX_MONTH_DAY_YEAR  : Regex = Regex::new(r"(?x)
-            ^                          # Start of string
-            ([[:alpha:]]+)\s*          # Month
-            (\d{1,2})(?:th)?\s*,*\s*   # Day
-            ([+-]?\d{4})               # Year
-            $                          # End of string
+            ^                                # Start of string
+            [[:alpha:]]+\s*                  # Month
+            \d{1,2}(?:st|nd|rd|th)?\s*,?\s*  # Day
+            [+-]?\d+                         # Year
+            $                                # End of string
          ").unwrap();
       }
 
@@ -213,18 +225,19 @@ impl Date {
       lazy_static!{
          // Month Day(th), Year
          static ref RX_MONTH_DAY_YEAR  : Regex = Regex::new(r"(?x)
-            ([[:alpha:]]+)\s*          # Month
-            (\d{1,2})(?:th)?\s*,*\s*   # Day
-            ([+-]?\d{4})               # Year
+            ([[:alpha:]]+)\s*                   # Month
+            (\d{1,2})(?:st|nd|rd|th)?\s*,?\s*   # Day
+            ([+-]?\d+)                          # Year
          ").unwrap();
       }
 
       let mut dates = Vec::new();
       for cap in RX_MONTH_DAY_YEAR.captures_iter(text) {
          // String copying is bad. Manage your lifetimes, dammit!
-         let day     = String::from(&cap[1]);
-         let month   = String::from(&cap[0]);
-         let year    = String::from(&cap[2]);
+         let day     = String::from(&cap[2]);
+         let month   = String::from(&cap[1]);
+         let year    = String::from(&cap[3]);
+
          let date = (day, month, year);
          dates.push(date);
       }
@@ -344,15 +357,15 @@ impl std::str::FromStr for Date {
       // Parse each into their respective types
       let day   = match day.parse::<usize>() {
          Ok(d)    => d,
-         Err(_)   => return Err(ParseDateError::InvalidFormatting),
+         Err(_)   => return Err(ParseDateError::InvalidDayFormatting),
       };
       let month = match month.parse::<Month>() {
          Ok(m)    => m,
-         Err(_)   => return Err(ParseDateError::InvalidFormatting),
+         Err(_)   => return Err(ParseDateError::InvalidMonthFormatting),
       };
       let year  = match year.parse::<isize>() {
          Ok(y)    => y,
-         Err(_)   => return Err(ParseDateError::InvalidFormatting),
+         Err(_)   => return Err(ParseDateError::InvalidYearFormatting),
       };
 
       // Parse into a Date struct

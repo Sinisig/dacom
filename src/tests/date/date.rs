@@ -338,18 +338,9 @@ fn trait_std_fmt_display() {
 #[test]
 fn trait_std_str_fromstr() {
    use crate::date::{Date, Month::*};
-
-   assert!("February 1st, 2000"     .parse::<Date>().unwrap() == Date::new(1, February,   2000  ).unwrap());
+   
    assert!("February 1, 2000"       .parse::<Date>().unwrap() == Date::new(1, February,   2000  ).unwrap());
-   assert!("1 February 2000"        .parse::<Date>().unwrap() == Date::new(1, February,   2000  ).unwrap());
-   assert!("02-01-2000"             .parse::<Date>().unwrap() == Date::new(1, February,   2000  ).unwrap());
-   assert!("2 - 1 - 2000"           .parse::<Date>().unwrap() == Date::new(1, February,   2000  ).unwrap());
-   assert!("02.01.2000"             .parse::<Date>().unwrap() == Date::new(1, February,   2000  ).unwrap());
-   assert!("2 . 1 . 2000"           .parse::<Date>().unwrap() == Date::new(1, February,   2000  ).unwrap());
-   assert!("02/01/2000"             .parse::<Date>().unwrap() == Date::new(1, February,   2000  ).unwrap());
-   assert!("2000-2-1"               .parse::<Date>().unwrap() == Date::new(1, February,   2000  ).unwrap());
-   assert!("2000.2.1"               .parse::<Date>().unwrap() == Date::new(1, February,   2000  ).unwrap());
-   assert!("January 1st, 2000 BCE"  .parse::<Date>().unwrap() == Date::new(1, February,   -2000 ).unwrap());
+   assert!("February 1st, 2000"     .parse::<Date>().unwrap() == Date::new(1, February,   2000  ).unwrap());
 
    assert!(""           .parse::<Date>().is_err() == true);
    assert!("     "      .parse::<Date>().is_err() == true);

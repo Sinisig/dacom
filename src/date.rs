@@ -286,7 +286,9 @@ impl std::str::FromStr for Date {
       // Regex parsers for the many different date formattings, fuck me
       lazy_static!{
          static ref RX_MONTH_DAY_YEAR  : Regex = Regex::new(r"(?x)
-            # TODO: Implement
+            ([[:alpha:]]+)\s*          # Month string
+            (\d{1,2})(?:th)?\s*,*\s*   # Day
+            (\d{4})                    # Year
          ").unwrap();
          //static ref RX_MMDDYYYY        : Regex = Regex::new(r"(?x)
          //   # TODO: Implement

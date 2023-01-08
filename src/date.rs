@@ -31,7 +31,7 @@ pub enum ParseDateError {
 }
 
 /// Enum for storing a month.
-#[derive(Copy, Clone, Debug, PartialEq, PartialOrd)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Month {
    January,
    February,
@@ -48,7 +48,7 @@ pub enum Month {
 }
 
 // Struct for storing a date.
-#[derive(Copy, Clone, Debug, PartialEq)]
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub struct Date {
    day   : usize,
    month : Month,
@@ -351,6 +351,12 @@ impl std::cmp::PartialOrd for Date {
       }
 
       return Some(std::cmp::Ordering::Equal);
+   }
+}
+
+impl std::cmp::Ord for Date {
+   fn cmp(&self, other : & Self) -> std::cmp::Ordering {
+      return self.partial_cmp(other).unwrap();
    }
 }
 

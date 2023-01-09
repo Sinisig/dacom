@@ -13,12 +13,11 @@ pub struct Args {
    #[arg(
       short             = 'f',
       long              = "file",
-      value_name        = "FILE_A,FILE_B,...",
-      help              = "One or more input files or directories to analyze",
+      value_name        = "INPUT_FILE",
+      help              = "Input file or directory to be searched",
       required          = true,
-      value_delimiter   = ',',
    )]
-   input_file  : Vec<String>,
+   input_file  : String,
 
    #[arg(
       short          = 'o',
@@ -55,9 +54,9 @@ impl Args {
    }
 
    /// Retrieves the input file string.
-   pub fn input_files<'a>(
+   pub fn input_file<'a>(
       &'a self,
-   ) -> &'a [String] {
+   ) -> &'a str {
       return &self.input_file;
    }
 

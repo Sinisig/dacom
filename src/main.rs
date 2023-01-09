@@ -60,21 +60,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
    if args.lock().unwrap().verbose() {println!(
       "Stringifying results",
    )};
-   let mut results_text = String::new();
-   for (path, dates) in results.into_iter() {
-      results_text += &format!("{path}\n");
-      for date in dates {
-         results_text += &format!("   {date}\n");
-      }
-      results_text += "\n";
-   }
+   let results = file_analyze_data(results);
    
    // Write the stringified results to the output file
    if args.lock().unwrap().verbose() {println!(
       "Writing results to {}",
       args.lock().unwrap().output_file(),
    )};
-   std::fs::write(args.lock().unwrap().output_file(), &results_text)?;
+   std::fs::write(args.lock().unwrap().output_file(), &results)?;
 
    // Return success
    return Ok(());
@@ -121,5 +114,23 @@ fn file_collect_dates(
    }
 
    return Ok(dates);
+}
+
+// Runs statistics and creates a results string over dating data
+fn file_analyze_data(
+   data  : Vec<(String, Vec<dacom::Date>)>
+) -> String {
+   let mut text = String::new();
+
+   // Temporary, only stringifies the raw data
+   for (path, dates) in data.into_iter() {
+      text += &format!("{path}\n");
+      for date in dates {
+         text += &format!("   {date}\n");
+      }
+      text += "\n";
+   }
+
+   return text;
 }
 

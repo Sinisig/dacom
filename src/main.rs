@@ -122,7 +122,29 @@ fn file_analyze_data(
 ) -> String {
    let mut text = String::new();
 
-   // Temporary, only stringifies the raw data
+   // Calculate statistics
+   let min = data.first().unwrap();
+   let max = data.last().unwrap();
+
+   // Begin summary
+   text += &format!("---------- Data Summary ----------\n");
+
+   // Oldest file
+   text += &format!("\nOldest file:\n");
+   text += &format!("   {}\n", min.0);
+   for date in &min.1 {
+      text += &format!("   {date}\n");
+   }
+
+   // Newest file
+   text += &format!("\nNewest file:\n");
+   text += &format!("   {}\n", max.0);
+   for date in &max.1 {
+      text += &format!("   {date}\n");
+   }
+
+   // Begin raw data
+   text += &format!("\n---------- Raw Data ----------\n\n");
    for (path, dates) in data.into_iter() {
       text += &format!("{path}\n");
       for date in dates {

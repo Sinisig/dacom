@@ -1,11 +1,9 @@
 fn main() -> Result<(), Box<dyn std::error::Error>> {
    // Parse command-line arguments
-   let args = std::sync::Arc::new(std::sync::Mutex::new(
-      dacom::Args::new(std::env::args()),
-   ));
+   let args = dacom::Args::new(std::env::args());
    
    // Create channel for receiving date analysis results
-   if args.lock().unwrap().verbose() {println!(
+   if args.verbose() {println!(
       "Creating data pipes",
    )};
    let (
@@ -14,15 +12,15 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
    ) = std::sync::mpsc::channel::<Vec<(String, Vec<dacom::Date>)>>();
    
    // Create threads to harvest date information from every input file
-   if args.lock().unwrap().verbose() {println!(
+   if args.verbose() {println!(
       "Starting date collector threads",
    )};
-   for path in args.lock().unwrap().input_files() {
-      let args = args.clone();
-      let path = path.clone();
-      let tx   = pipe_results_transmitter.clone();
+   for path in args.input_files() {
+      let verbose = args.verbose();
+      let path    = path.clone();
+      let tx      = pipe_results_transmitter.clone();
       std::thread::spawn(move || {
-         match file_collect_dates(path, &args.lock().unwrap()) {
+         match file_collect_dates(path, verbose) {
             Ok(dates)   => tx.send(dates).unwrap(),
             Err(err)    => eprintln!("File I/O error: {err}"),
          }
@@ -31,7 +29,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
    std::mem::drop(pipe_results_transmitter);
 
    // Combine all the results together
-   if args.lock().unwrap().verbose() {println!(
+   if args.verbose() {println!(
       "Waiting for date collection results"
    )};
    let mut results = Vec::new();
@@ -40,7 +38,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
    }
 
    // Sort the results by oldest date, then newest date, then path
-   if args.lock().unwrap().verbose() {println!(
+   if args.verbose() {println!(
       "Sorting results",
    )};
    results.sort_unstable_by(|d1, d2| {
@@ -57,17 +55,20 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
    });
 
    // Stringify the compiled list of dates
-   if args.lock().unwrap().verbose() {println!(
+   if args.verbose() {println!(
       "Stringifying results",
    )};
    let results = file_analyze_data(results);
    
-   // Write the stringified results to the output file
-   if args.lock().unwrap().verbose() {println!(
-      "Writing results to {}",
-      args.lock().unwrap().output_file(),
-   )};
-   std::fs::write(args.lock().unwrap().output_file(), &results)?;
+   // Write the stringified results to the output stream
+   if let Some(output_path) = &args.output_file() {
+      if args.verbose() {println!(
+         "Writing results to {output_path}",
+      )};
+      std::fs::write(output_path, &results)?;
+   } else {
+      print!("{results}");
+   }
 
    // Return success
    return Ok(());
@@ -75,10 +76,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
 // Searches a file for dates and compiles them
 fn file_collect_dates(
-   path  : String,
-   args  : & dacom::Args,
+   path     : String,
+   verbose  : bool,
 ) -> Result<Vec<(String, Vec<dacom::Date>)>, std::io::Error> {
-   if args.verbose() {println!(
+   if verbose {println!(
       "Searching {path}",
    )}
 
@@ -90,7 +91,7 @@ fn file_collect_dates(
       for file in std::fs::read_dir(&path)? {
          let file = file?;
          let path = String::from(file.path().to_str().unwrap());
-         let mut dates_add = file_collect_dates(path, args)?;
+         let mut dates_add = file_collect_dates(path, verbose)?;
          dates.append(&mut dates_add);
       }
    } else {

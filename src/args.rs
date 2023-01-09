@@ -24,11 +24,10 @@ pub struct Args {
       short          = 'o',
       long           = "output",
       value_name     = "OUTPUT_FILE",
-      help           = "The output file for dating analysis",
+      help           = "The output file for dating analysis, not specifying prints to stdout",
       required       = false,
-      default_value  = "results.txt",
    )]
-   output_file : String,
+   output_file : Option<String>,
 
    #[arg(
       short          = 'v',
@@ -65,7 +64,7 @@ impl Args {
    /// Retrieves the outfile file string.
    pub fn output_file<'a>(
       &'a self,
-   ) -> &'a str {
+   ) -> &'a Option<String> {
       return &self.output_file;
    }
 

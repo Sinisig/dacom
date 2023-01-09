@@ -394,11 +394,15 @@ impl std::fmt::Display for Date {
          "{} {}{}, {}{}",
          self.month,
          self.day,
-         match self.day % 10 {
-            1  => "st",
-            2  => "nd",
-            3  => "rd",
-            _  => "th",
+         if self.day >= 10 && self.day <= 19 {
+            "th"
+         } else {
+            match self.day % 10 {
+               1  => "st",
+               2  => "nd",
+               3  => "rd",
+               _  => "th",
+            }
          },
          self.year.abs(),
          if self.year >= 0 {

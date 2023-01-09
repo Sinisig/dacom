@@ -386,8 +386,8 @@ fn trait_std_fmt_display() {
    let s06 = Date::new(28, February,   2000, ).unwrap().to_string();
    let s07 = Date::new(1,  January,    912,  ).unwrap().to_string();
    let s08 = Date::new(1,  January,    80,   ).unwrap().to_string();
-   let s09 = Date::new(30, November,   33,   ).unwrap().to_string();
-   let s10 = Date::new(30, November,   -33,  ).unwrap().to_string();
+   let s09 = Date::new(11, November,   33,   ).unwrap().to_string();
+   let s10 = Date::new(12, November,   -33,  ).unwrap().to_string();
 
    assert!(s01 == "January 1st, 2000"     );
    assert!(s02 == "January 2nd, 2000"     );
@@ -397,8 +397,8 @@ fn trait_std_fmt_display() {
    assert!(s06 == "February 28th, 2000"   );
    assert!(s07 == "January 1st, 912"      );
    assert!(s08 == "January 1st, 80"       );
-   assert!(s09 == "November 30th, 33"     );
-   assert!(s10 == "November 30th, 33 BCE" );
+   assert!(s09 == "November 11th, 33"     );
+   assert!(s10 == "November 12th, 33 BCE" );
 
    return;
 }

@@ -3,6 +3,7 @@
 // Public interfaces
 pub mod args;
 pub mod date;
+pub mod stat;
 
 // Re-exports
 pub use args::Args;

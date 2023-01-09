@@ -2,4 +2,5 @@
 
 // Unit test modules
 mod date;
+mod stat;
 

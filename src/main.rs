@@ -2,158 +2,25 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
    // Parse command-line arguments
    let args = dacom::Args::new(std::env::args());
    
-   // Create channel for receiving date analysis results
-   if args.verbose() {println!(
-      "Creating data pipes",
-   )};
-   let (
-      pipe_results_transmitter,
-      pipe_results_receiver,
-   ) = std::sync::mpsc::channel::<Vec<(String, Vec<dacom::Date>)>>();
-   
-   // Create threads to harvest date information from every input file
-   if args.verbose() {println!(
-      "Starting date collector threads",
-   )};
-   for path in args.input_files() {
-      let verbose = args.verbose();
-      let path    = path.clone();
-      let tx      = pipe_results_transmitter.clone();
-      std::thread::spawn(move || {
-         match file_collect_dates(path, verbose) {
-            Ok(dates)   => tx.send(dates).unwrap(),
-            Err(err)    => eprintln!("File I/O error: {err}"),
-         }
+   // Load dates from files
+   let data = dacom::FileDateAggregate::new(
+      &args.input_files()[0],
+      if args.verbose() {
+         |path| println!("Searching {path}")
+      } else {
+         |_| {}
+      },
+   )?;
+
+   // Test code for new stuff
+   data.iter().for_each(|data| {
+      println!("{}", data.path());
+      data.dates().iter().for_each(|date| {
+         println!("   {}", date);
       });
-   }
-   std::mem::drop(pipe_results_transmitter);
-
-   // Combine all the results together
-   if args.verbose() {println!(
-      "Waiting for date collection results"
-   )};
-   let mut results = Vec::new();
-   while let Ok(mut r) = pipe_results_receiver.recv() {
-      results.append(&mut r);
-   }
-
-   // Sort the results by oldest date, then newest date, then path
-   if args.verbose() {println!(
-      "Sorting results",
-   )};
-   results.sort_unstable_by(|d1, d2| {
-      use std::cmp::Ordering::*;
-      match d1.1.first().unwrap().cmp(&d2.1.first().unwrap()) {
-         Greater  => Greater,
-         Less     => Less,
-         Equal    => match d1.1.last().unwrap().cmp(&d2.1.last().unwrap()) {
-            Greater  => Greater,
-            Less     => Less,
-            Equal    => d1.0.cmp(&d2.0),
-         }
-      }
    });
-
-   // Stringify the compiled list of dates
-   if args.verbose() {println!(
-      "Stringifying results",
-   )};
-   let results = file_analyze_data(results);
-   
-   // Write the stringified results to the output stream
-   if let Some(output_path) = &args.output_file() {
-      if args.verbose() {println!(
-         "Writing results to {output_path}",
-      )};
-      std::fs::write(output_path, &results)?;
-   } else {
-      print!("{results}");
-   }
 
    // Return success
    return Ok(());
-}
-
-// Searches a file for dates and compiles them
-fn file_collect_dates(
-   path     : String,
-   verbose  : bool,
-) -> Result<Vec<(String, Vec<dacom::Date>)>, std::io::Error> {
-   if verbose {println!(
-      "Searching {path}",
-   )}
-
-   let mut dates = Vec::new();
-
-   // If it's a directory, recursively date its contents
-   // Otherwise run the dater on it
-   if std::fs::File::open(&path)?.metadata()?.is_dir() {
-      for file in std::fs::read_dir(&path)? {
-         let file = file?;
-         let path = String::from(file.path().to_str().unwrap());
-         let mut dates_add = file_collect_dates(path, verbose)?;
-         dates.append(&mut dates_add);
-      }
-   } else {
-      // Load the file's contents into memory
-      let file = std::fs::read(&path)?;
-      let file = match String::from_utf8(file) {
-         Ok(f)    => f,
-         Err(_)   => return Ok(dates),
-      };
-
-      // Search the text for dates and sort them into the vector
-      let date_list = dacom::Date::from_text_multi_sorted_by(
-         &file,
-         |&d1, &d2| d1.cmp(&d2),
-      );
-
-      // Add the date list only if we found anything
-      if date_list.is_empty() == false {
-         dates.push((path, date_list));
-      }
-   }
-
-   return Ok(dates);
-}
-
-// Runs statistics and creates a results string over dating data
-fn file_analyze_data(
-   data  : Vec<(String, Vec<dacom::Date>)>
-) -> String {
-   let mut text = String::new();
-
-   // Calculate statistics
-   let min = data.first().unwrap();
-   let max = data.last().unwrap();
-
-   // Begin summary
-   text += &format!("---------- Data Summary ----------\n");
-
-   // Oldest file
-   text += &format!("\nOldest file:\n");
-   text += &format!("   {}\n", min.0);
-   for date in &min.1 {
-      text += &format!("   {date}\n");
-   }
-
-   // Newest file
-   text += &format!("\nNewest file:\n");
-   text += &format!("   {}\n", max.0);
-   for date in &max.1 {
-      text += &format!("   {date}\n");
-   }
-
-   // Begin raw data
-   text += &format!("\n---------- Raw Data ----------\n\n");
-   for (path, dates) in data.into_iter() {
-      text += &format!("{path}\n");
-      for date in dates {
-         text += &format!("   {date}\n");
-      }
-      text += "\n";
-   }
-
-   return text;
 }
 

@@ -85,6 +85,38 @@ fn file_collect_dates(
    path  : String,
    args  : & dacom::Args,
 ) -> Result<Vec<(String, Vec<dacom::Date>)>, std::io::Error> {
-   
+   if args.verbose() {println!(
+      "Searching {path}",
+   )}
+
+   let mut dates = Vec::new();
+
+   // If it's a directory, recursively date its contents
+   // Otherwise run the dater on it
+   if std::fs::File::open(&path)?.metadata()?.is_dir() {
+      for file in std::fs::read_dir(&path)? {
+         let file = file?;
+         let path = String::from(file.path().to_str().unwrap());
+         let mut dates_add = file_collect_dates(path, args)?;
+         dates.append(&mut dates_add);
+      }
+   } else {
+      // Load the file's contents into memory
+      let file = std::fs::read(&path)?;
+      let file = String::from_utf8_lossy(&file);
+
+      // Search the text for dates and sort them into the vector
+      let date_list = dacom::Date::from_text_multi_sorted_by(
+         &file,
+         |&d1, &d2| d1.cmp(&d2),
+      );
+
+      // Add the date list only if we found anything
+      if date_list.is_empty() == false {
+         dates.push((path, date_list));
+      }
+   }
+
+   return Ok(dates);
 }
 

@@ -14,7 +14,10 @@ pub struct DateList {
 /// file dating.
 #[derive(Copy, Clone, Debug)]
 pub enum FileDateError {
-   IOError,
+   GeneralIOError,
+   PermissionDenied,
+   FileNotFound,
+   FileIsDirectory,
 }
 
 /// A single file date collection element created
@@ -111,47 +114,32 @@ impl<'l> FileDate<'l> {
    }
 }
 
-
-/* Methods - FileDateAggregate */
-
+/* Internal helpers - FileDateAggregate */
 
 impl FileDateAggregate {
-   /// Searches a file for files with dating
-   /// information and stores those with found
-   /// dates.  Directories are recursively searched.
-   /// The input closure is executed for every
-   /// file searched.
-   pub fn new<F>(
-      path     : & str,
-      per_file : F,
-   ) -> Result<Self, FileDateError>
-   where F: Fn(& str) + Copy {
-      // Get the unsorted data
-      let mut file_names = Vec::new();
-      let mut file_dates = Vec::new();
-      Self::new_recursive_unsorted(
-         & mut file_names,
-         & mut file_dates,
-         String::from(path),
-         per_file,
-      )?;
+   /// Sorts the input data from oldest
+   /// file to newest file.  This is done
+   /// by looking at the oldest date from each
+   /// file and sorting by that.  If two of
+   /// the oldest dates are equal, then the
+   /// newest date is used.  If they are
+   /// still equal, the file names are used
+   /// for the comparison.
+   fn internal_sort(
+      self,
+   ) -> Self {
+      // TODO: Sorting
 
-      // Sort the files first by oldest date,
-      // failing that by newest date, and then
-      // failing that by path lexicographically.
-
-
-      // Return success
-      return Ok(Self{
-         file_names  : file_names,
-         file_dates  : file_dates,
-      });
+      return self;
    }
 
-   /// Internal helper for searching a directory
-   /// recursively.  The resulting data is unsorted,
-   /// which should be fixed with a public wrapper.
-   fn new_recursive_unsorted<F>(
+   /// Searches a file path recursively for any
+   /// and all files containing dates.  If the
+   /// file is binary or contains no dates, it
+   /// is not added.  If the file is a directory,
+   /// it is recursively searched and every file
+   /// in the directory is searched.
+   fn internal_collect_recursive_unsorted<F>(
       file_name_buffer  : & mut Vec<String>,
       file_date_buffer  : & mut Vec<DateList>,
       path     : String,
@@ -161,16 +149,16 @@ impl FileDateAggregate {
       // If the file is a directory, search it recursively
       if match std::fs::metadata(&path) {
          Ok(md)   => md,
-         Err(_)   => return Err(FileDateError::IOError),
+         Err(e)   => return Err(e.into()),
       }.is_dir() == true {
          for file in match std::fs::read_dir(&path) {
             Ok(itr)  => itr,
-            Err(_)   => return Err(FileDateError::IOError),
+            Err(e)   => return Err(e.into()),
          } {
             // Unwrap result containing file
             let file = match file {
                Ok(f)    => f,
-               Err(_)   => return Err(FileDateError::IOError),
+               Err(e)   => return Err(e.into()),
             };
             
             // Create new path
@@ -181,7 +169,7 @@ impl FileDateAggregate {
                .into_owned();
 
             // Get info from this file
-            Self::new_recursive_unsorted(
+            Self::internal_collect_recursive_unsorted(
                file_name_buffer,
                file_date_buffer,
                path,
@@ -195,7 +183,7 @@ impl FileDateAggregate {
          // Read the file as text
          let file = match std::fs::read(&path) {
             Ok(d)    => d,
-            Err(_)   => return Err(FileDateError::IOError),
+            Err(e)   => return Err(e.into()),
          };
          let file = String::from_utf8_lossy(&file).into_owned();
 
@@ -214,6 +202,41 @@ impl FileDateAggregate {
 
       // Return success
       return Ok(());
+   }
+}
+
+/* Methods - FileDateAggregate */
+
+
+impl FileDateAggregate { 
+   /// Searches a file for files with dating
+   /// information and stores those with found
+   /// dates.  Directories are recursively searched.
+   /// The input closure is executed for every
+   /// file searched.
+   pub fn new<F>(
+      path     : & str,
+      per_file : F,
+   ) -> Result<Self, FileDateError>
+   where F: Fn(& str) + Copy {
+      // Get the unsorted data
+      let mut file_names = Vec::new();
+      let mut file_dates = Vec::new();
+      Self::internal_collect_recursive_unsorted(
+         & mut file_names,
+         & mut file_dates,
+         String::from(path),
+         per_file,
+      )?;
+
+      // Create the struct and sort it
+      let data = Self{
+         file_names  : file_names,
+         file_dates  : file_dates,
+      }.internal_sort();
+
+      // Return success
+      return Ok(data);
    }
 
    /// Creates an iterator over the elements.
@@ -278,11 +301,24 @@ impl std::fmt::Display for FileDateError {
       stream   : & mut std::fmt::Formatter<'_>,
    ) -> std::fmt::Result {
       return write!(stream, "{}", match self {
-         Self::IOError  => "I/O Error",
+         Self::GeneralIOError =>
+            "General I/O error",
+         Self::PermissionDenied =>
+            "Permission denied",
+         Self::FileNotFound =>
+            "File not found",
+         Self::FileIsDirectory =>
+            "File is a directory",
       });
    }
 }
 
 impl std::error::Error for FileDateError {
+}
+
+impl std::convert::From<std::io::Error> for FileDateError {
+   fn from(err : std::io::Error) -> Self {
+      return Self::GeneralIOError;
+   }
 }
 

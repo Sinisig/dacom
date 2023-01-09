@@ -5,7 +5,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
    // Load dates from files
    let data = dacom::FileDateAggregate::new(
       &args.input_file(),
-      |path| println!("Searching {path}"),
+      |file| println!("Searching {file}"),
    )?;
 
    // Test code for new stuff

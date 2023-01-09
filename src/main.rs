@@ -103,7 +103,10 @@ fn file_collect_dates(
    } else {
       // Load the file's contents into memory
       let file = std::fs::read(&path)?;
-      let file = String::from_utf8_lossy(&file);
+      let file = match String::from_utf8(file) {
+         Ok(f)    => f,
+         Err(_)   => return Ok(dates),
+      };
 
       // Search the text for dates and sort them into the vector
       let date_list = dacom::Date::from_text_multi_sorted_by(

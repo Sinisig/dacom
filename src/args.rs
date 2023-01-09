@@ -14,7 +14,7 @@ pub struct Args {
       short             = 'f',
       long              = "file",
       value_name        = "FILE_A,FILE_B,...",
-      help              = "One or more input files",
+      help              = "One or more input files or directories to analyze",
       required          = true,
       value_delimiter   = ',',
    )]

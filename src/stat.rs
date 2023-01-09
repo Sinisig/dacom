@@ -14,10 +14,10 @@ pub struct DateList {
 /// file dating.
 #[derive(Copy, Clone, Debug)]
 pub enum FileDateError {
-   GeneralIOError,
    PermissionDenied,
    FileNotFound,
    FileIsDirectory,
+   GeneralIOError,
 }
 
 /// A single file date collection element created
@@ -328,14 +328,14 @@ impl std::fmt::Display for FileDateError {
       stream   : & mut std::fmt::Formatter<'_>,
    ) -> std::fmt::Result {
       return write!(stream, "{}", match self {
-         Self::GeneralIOError =>
-            "General I/O error",
          Self::PermissionDenied =>
             "Permission denied",
          Self::FileNotFound =>
             "File not found",
          Self::FileIsDirectory =>
             "File is a directory",
+         Self::GeneralIOError =>
+            "General I/O error",
       });
    }
 }
@@ -345,7 +345,14 @@ impl std::error::Error for FileDateError {
 
 impl std::convert::From<std::io::Error> for FileDateError {
    fn from(err : std::io::Error) -> Self {
-      return Self::GeneralIOError;
+      use std::io::ErrorKind::*;
+
+      let err = err.kind();
+      return match err {
+         PermissionDenied  => Self::PermissionDenied,
+         NotFound          => Self::FileNotFound,
+         _                 => Self::GeneralIOError,
+      };
    }
 }
 

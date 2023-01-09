@@ -85,12 +85,6 @@ fn file_collect_dates(
    path  : String,
    args  : & dacom::Args,
 ) -> Result<Vec<(String, Vec<dacom::Date>)>, std::io::Error> {
-   // TODO: Everything :/
-
-   if args.verbose() {println!(
-      "Searching {path}",
-   )};
-
-   return Ok(vec![(path, vec![dacom::Date::new(11, dacom::Month::January, 2000).unwrap()])]);
+   
 }
 

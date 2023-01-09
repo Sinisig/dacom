@@ -133,6 +133,43 @@ impl FileDateAggregate {
       return self;
    }
 
+   /// Searches a single file for dates and returns
+   /// a DateList containing all the found dates.
+   fn internal_collect_single<F>(
+      path     : & str,
+      per_file : F,
+   ) -> Result<DateList, FileDateError>
+   where F: Fn(& str) {
+      // Execute the user closure
+      per_file(path);
+
+      // Make sure the file isn't a directory
+      if match std::fs::metadata(path) {
+         Ok(md)   => md,
+         Err(e)   => return Err(e.into()),
+      }.is_dir() == true {
+         return Err(FileDateError::FileIsDirectory);
+      }
+
+      // Read the file as text
+      let file = match std::fs::read(&path) {
+         Ok(d)    => d,
+         Err(e)   => return Err(e.into()),
+      };
+      let file = String::from_utf8_lossy(&file).into_owned();
+
+      // Search for dates within the file
+      let mut date_list = crate::Date::from_text_multi_sorted_by(&file, |d1, d2| {
+         d1.cmp(&d2)
+      });
+      
+      // Sort the date list
+      date_list.sort_unstable();
+
+      // Return success
+      return Ok(DateList::from(date_list));
+   }
+
    /// Searches a file path recursively for any
    /// and all files containing dates.  If the
    /// file is binary or contains no dates, it
@@ -146,58 +183,48 @@ impl FileDateAggregate {
       per_file : F,
    ) -> Result<(), FileDateError>
    where F: Fn(& str) + Copy {
-      // If the file is a directory, search it recursively
-      if match std::fs::metadata(&path) {
-         Ok(md)   => md,
-         Err(e)   => return Err(e.into()),
-      }.is_dir() == true {
-         for file in match std::fs::read_dir(&path) {
-            Ok(itr)  => itr,
-            Err(e)   => return Err(e.into()),
-         } {
-            // Unwrap result containing file
-            let file = match file {
-               Ok(f)    => f,
-               Err(e)   => return Err(e.into()),
-            };
-            
-            // Create new path
-            let path = file
-               .path()
-               .into_os_string()
-               .to_string_lossy()
-               .into_owned();
+      // Try to parse the file path, if it errors as a directory, recursively
+      // search that directory
+      match Self::internal_collect_single(&path, per_file) {
+         Ok(data_list)  => {
+            // If the data list contains dates, add the file to the buffers
+            if data_list.is_empty() == false {
+               file_name_buffer.push(path);
+               file_date_buffer.push(data_list);
+            }
+         },
+         Err(err)       => {
+            // If it is not a directory error, return that error
+            match err {
+               FileDateError::FileIsDirectory => (),
+               _ => return Err(err),
+            }
 
-            // Get info from this file
-            Self::internal_collect_recursive_unsorted(
-               file_name_buffer,
-               file_date_buffer,
-               path,
-               per_file,
-            )?;
-         }
-      } else {
-         // Run the user closure
-         per_file(&path);
+            // Iterate for every file in the directory and try to parse it
+            for file in match std::fs::read_dir(&path) {
+               Ok(iter) => iter,
+               Err(err) => return Err(err.into()),
+            } {
+               // Unwrap the file result, erroring if we get a
+               // file I/O error
+               let file = match file {
+                  Ok(f)    => f,
+                  Err(e)   => return Err(e.into()),
+               };
 
-         // Read the file as text
-         let file = match std::fs::read(&path) {
-            Ok(d)    => d,
-            Err(e)   => return Err(e.into()),
-         };
-         let file = String::from_utf8_lossy(&file).into_owned();
+               // Copy the new directory path into a String
+               // TODO: Smarter way of doing this
+               let path = file.path().into_os_string().into_string().unwrap();
 
-         // Search for dates within the file
-         let mut dates = crate::Date::from_text_multi_sorted_by(&file, |d1, d2| {
-            d1.cmp(&d2)
-         });
-
-         // Sort the dates
-         dates.sort_unstable();
-
-         // Add the results to the vecs
-         file_name_buffer.push(path);
-         file_date_buffer.push(DateList::from(dates));
+               // Try to parse the new file/directory
+               Self::internal_collect_recursive_unsorted(
+                  file_name_buffer,
+                  file_date_buffer,
+                  path,
+                  per_file,
+               )?;
+            }
+         },
       }
 
       // Return success

@@ -6,8 +6,8 @@
 
 /// A sorted list of dates from oldest to
 /// newest.
-pub struct DateList<'l> {
-   list  : &'l [crate::Date],
+pub struct DateList {
+   list  : Vec<crate::Date>,
 }
 
 /// An enum containing an error involving
@@ -21,34 +21,34 @@ pub enum FileDateError {
 /// by FileDateAggregateIterator.
 pub struct FileDate<'l> {
    file_name   : &'l str,
-   date_list   : &'l DateList<'l>,
+   date_list   : &'l DateList,
 }
 
 /// A collection of files with their dating
 /// information.
-pub struct FileDateAggregate<'l> {
+pub struct FileDateAggregate {
    // Implemented as SoA for better cache performance.
    // Each element of file_names corresponds 1:1 with
    // an element of the same index from file_dates.
    file_names  : Vec<String>,
-   file_dates  : Vec<DateList<'l>>,
+   file_dates  : Vec<DateList>,
 }
 
 /// An iterator over a FileDateAggregate object.
 pub struct FileDateAggregateIterator<'l> {
    index : usize,
-   data  : &'l FileDateAggregate<'l>,
+   data  : &'l FileDateAggregate,
 }
 
 
 /* Methods - DateList */
 
 
-impl<'l> DateList<'l> {
+impl DateList {
    /// Creates a new Date List from an existing
    /// sorted array.
    pub fn from(
-      date_list   : &'l [crate::Date],
+      date_list   : Vec<crate::Date>,
    ) -> Self {
       return Self{
          list  : date_list,
@@ -60,10 +60,10 @@ impl<'l> DateList<'l> {
    /// it's usually unecessary to call this method
    /// explicitly as opposed to dereferencing the
    /// struct directly.
-   pub fn as_ref(
+   pub fn as_ref<'l>(
       &'l self,
    ) -> &'l [crate::Date] {
-      return self.list;
+      return &self.list;
    }
 }
 
@@ -71,7 +71,7 @@ impl<'l> DateList<'l> {
 /* Trait implementations - DateList */
 
 
-impl<'l> std::ops::Deref for DateList<'l> {
+impl std::ops::Deref for DateList {
    type Target = [crate::Date];
 
    fn deref(&self) -> &Self::Target {
@@ -88,7 +88,7 @@ impl<'l> FileDate<'l> {
    /// file path and a DateList.
    pub fn from(
       file_name   : &'l str,
-      date_list   : &'l DateList<'l>,
+      date_list   : &'l DateList,
    ) -> Self {
       return Self{
          file_name   : file_name,
@@ -115,24 +115,109 @@ impl<'l> FileDate<'l> {
 /* Methods - FileDateAggregate */
 
 
-impl<'l> FileDateAggregate<'l> {
-   // Searches a file for files with dating
-   // information and stores those with found
-   // dates.  Directories are recursively searched.
-   // The input closure is executed for every
-   // file searched.
+impl FileDateAggregate {
+   /// Searches a file for files with dating
+   /// information and stores those with found
+   /// dates.  Directories are recursively searched.
+   /// The input closure is executed for every
+   /// file searched.
    pub fn new<F>(
-      path     : &'l str,
+      path     : & str,
       per_file : F,
    ) -> Result<Self, FileDateError>
-   where F: Fn(&'l str) {
-      // TODO: Implement
-      per_file(path);
-      return Err(FileDateError::IOError);
+   where F: Fn(& str) + Copy {
+      // Get the unsorted data
+      let mut file_names = Vec::new();
+      let mut file_dates = Vec::new();
+      Self::new_recursive_unsorted(
+         & mut file_names,
+         & mut file_dates,
+         String::from(path),
+         per_file,
+      )?;
+
+      // Sort the files first by oldest date,
+      // failing that by newest date, and then
+      // failing that by path lexicographically.
+
+
+      // Return success
+      return Ok(Self{
+         file_names  : file_names,
+         file_dates  : file_dates,
+      });
+   }
+
+   /// Internal helper for searching a directory
+   /// recursively.  The resulting data is unsorted,
+   /// which should be fixed with a public wrapper.
+   fn new_recursive_unsorted<F>(
+      file_name_buffer  : & mut Vec<String>,
+      file_date_buffer  : & mut Vec<DateList>,
+      path     : String,
+      per_file : F,
+   ) -> Result<(), FileDateError>
+   where F: Fn(& str) + Copy {
+      // If the file is a directory, search it recursively
+      if match std::fs::metadata(&path) {
+         Ok(md)   => md,
+         Err(_)   => return Err(FileDateError::IOError),
+      }.is_dir() == true {
+         for file in match std::fs::read_dir(&path) {
+            Ok(itr)  => itr,
+            Err(_)   => return Err(FileDateError::IOError),
+         } {
+            // Unwrap result containing file
+            let file = match file {
+               Ok(f)    => f,
+               Err(_)   => return Err(FileDateError::IOError),
+            };
+            
+            // Create new path
+            let path = file
+               .path()
+               .into_os_string()
+               .to_string_lossy()
+               .into_owned();
+
+            // Get info from this file
+            Self::new_recursive_unsorted(
+               file_name_buffer,
+               file_date_buffer,
+               path,
+               per_file,
+            )?;
+         }
+      } else {
+         // Run the user closure
+         per_file(&path);
+
+         // Read the file as text
+         let file = match std::fs::read(&path) {
+            Ok(d)    => d,
+            Err(_)   => return Err(FileDateError::IOError),
+         };
+         let file = String::from_utf8_lossy(&file).into_owned();
+
+         // Search for dates within the file
+         let mut dates = crate::Date::from_text_multi_sorted_by(&file, |d1, d2| {
+            d1.cmp(&d2)
+         });
+
+         // Sort the dates
+         dates.sort_unstable();
+
+         // Add the results to the vecs
+         file_name_buffer.push(path);
+         file_date_buffer.push(DateList::from(dates));
+      }
+
+      // Return success
+      return Ok(());
    }
 
    /// Creates an iterator over the elements.
-   pub fn iter(
+   pub fn iter<'l>(
       &'l self,
    ) -> FileDateAggregateIterator<'l> {
       return FileDateAggregateIterator::new(self);
@@ -140,7 +225,7 @@ impl<'l> FileDateAggregate<'l> {
 
    /// Gets the file count.
    pub fn count(
-      &'l self,
+      & self,
    ) -> usize {
       return self.file_names.len();
    }
@@ -175,9 +260,10 @@ impl<'l> std::iter::Iterator for FileDateAggregateIterator<'l> {
          return None;
       }
 
+      self.index += 1;
       return Some(FileDate::from(
-         &self.data.file_names[self.index],
-         &self.data.file_dates[self.index],
+         &self.data.file_names[self.index - 1],
+         &self.data.file_dates[self.index - 1],
       ));
    }
 }

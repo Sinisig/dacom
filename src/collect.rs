@@ -307,6 +307,24 @@ impl FileDateAggregate {
    ) -> usize {
       return self.file_info.len();
    }
+
+   /// Creates a FileDateReport using the given
+   /// file data.
+   pub fn create_report<'l>(
+      &'l self,
+   ) -> crate::FileDateReport<'l> {
+      let min = self.iter().nth(0).unwrap();
+      let max = self.iter().last().unwrap();
+
+      // This is stupid spaghetti code, but Rust's
+      // borrow checker and lifetimes have forced
+      // my hand.
+      return crate::FileDateReport::new(
+         self,
+         min,
+         max,
+      );
+   }
 }
 
 

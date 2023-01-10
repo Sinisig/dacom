@@ -9,13 +9,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
    )?;
 
    // Test code for new stuff
-   data.iter().for_each(|data| {
-      println!("{}", data.path());
-      data.dates().iter().for_each(|date| {
-         println!("   {}", date);
-      });
-      println!("");
-   });
+   println!("{}", data.create_report());
 
    // Return success
    return Ok(());

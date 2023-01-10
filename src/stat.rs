@@ -153,7 +153,7 @@ impl FileDateAggregate {
       // Execute the user closure
       per_file(path);
 
-      // Make sure the file isn't a directory
+      // Check if the file is a directory
       if match std::fs::metadata(path) {
          Ok(md)   => md,
          Err(e)   => return Err(e.into()),
@@ -161,22 +161,27 @@ impl FileDateAggregate {
          return Err(FileDateError::FileIsDirectory);
       }
 
-      // Read the file as text
-      let file = match std::fs::read_to_string(path) {
-         Ok(txt)  => txt,
-         Err(err) => {
-            use std::io::ErrorKind;
-            match err.kind() {
-               ErrorKind::InvalidData => return Err(FileDateError::BinaryFile),
-               _  => return Err(err.into()),
-            }
-         },
+      // Map the file into memory as a string slice
+      let file = match std::fs::File::open(&path) {
+         Ok(f)    => f,
+         Err(e)   => return Err(e.into()),
+      };
+      let file = match unsafe{memmap2::Mmap::map(&file)} {
+         Ok(m)    => m,
+         Err(e)   => return Err(e.into()),
+      };
+      let file = match std::str::from_utf8(&file) {
+         Ok(d)    => d,
+         Err(_)   => return Err(FileDateError::BinaryFile),
       };
 
       // Search for dates within the file
-      let mut date_list = crate::Date::from_text_multi_sorted_by(&file, |d1, d2| {
-         d1.cmp(&d2)
-      });
+      let mut date_list = crate::Date::from_text_multi_sorted_by(
+         &file,
+         |d1, d2| {
+            d1.cmp(&d2)
+         },
+      );
       
       // Sort the date list
       date_list.sort_unstable();

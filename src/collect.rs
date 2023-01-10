@@ -56,6 +56,13 @@ pub struct FileAggregateDateSet {
    files : sorted_vec::SortedSet<FileDateSet>,
 }
 
+/// An iterator over a FileAggregateDateSet created
+/// with the iter() method.
+pub struct FileAggregateDateSetIterator<'l> {
+   data  : &'l FileAggregateDateSet,
+   index : usize,
+}
+
 //////////////////////////////////////////////
 // Trait implementations - CollectDateError //
 //////////////////////////////////////////////
@@ -462,6 +469,14 @@ impl FileAggregateDateSet {
    ) -> &'l [FileDateSet] {
       return &self.files;
    }
+
+   /// Creates an iterator over the file
+   /// date sets.
+   pub fn iter<'l>(
+      &'l self,
+   ) -> FileAggregateDateSetIterator<'l> {
+      return FileAggregateDateSetIterator::new(self);
+   }
 }
 
 //////////////////////////////////////////////////
@@ -475,6 +490,40 @@ impl std::ops::Deref for FileAggregateDateSet {
       & self,
    ) -> & Self::Target {
       return self.as_slice();
+   }
+}
+
+////////////////////////////////////////////
+// Methods - FileAggregateDateSetIterator //
+////////////////////////////////////////////
+
+impl<'l> FileAggregateDateSetIterator<'l> {
+   /// Creates a new iterator from an
+   /// existing FileAggregateDateSet.
+   pub fn new(
+      data : &'l FileAggregateDateSet,
+   ) -> Self {
+      return Self{
+         data  : data,
+         index : 0,
+      };
+   }
+}
+
+//////////////////////////////////////////////////////////
+// Trait implementations - FileAggregateDateSetIterator //
+//////////////////////////////////////////////////////////
+
+impl<'l> std::iter::Iterator for FileAggregateDateSetIterator<'l> {
+   type Item = &'l FileDateSet;
+
+   fn next(
+      & mut self,
+   ) -> Option<Self::Item> {
+      let item = self.data.as_slice().get(self.index);
+
+      self.index += 1;
+      return item;
    }
 }
 

@@ -9,7 +9,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
    )?;
    
    // Print the results
-   for file in data.as_slice() {
+   for file in data.iter() {
       println!("{}", file.path().to_str().unwrap());
       for date in file.dates().as_slice() {
          println!("   {date}");

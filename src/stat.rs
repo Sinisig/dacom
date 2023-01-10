@@ -132,9 +132,21 @@ impl FileDateAggregate {
    /// still equal, the file names are used
    /// for the comparison.
    fn internal_sort(
-      self,
+      mut self,
    ) -> Self {
-      // TODO: Sorting
+      self.file_info.sort_unstable_by(|(file1, date1), (file2, date2)| {
+         use std::cmp::Ordering::*;
+
+         match date1.first().unwrap().cmp(&date2.first().unwrap()) {
+            Less     => Less,
+            Greater  => Greater,
+            Equal    => match date1.last().unwrap().cmp(&date2.last().unwrap()) {
+               Less     => Less,
+               Greater  => Greater,
+               Equal    => file1.cmp(file2),
+            },
+         }
+      });
 
       return self;
    }
@@ -326,13 +338,14 @@ impl<'l> std::iter::Iterator for FileDateAggregateIterator<'l> {
          return None;
       }
 
-      let file_data = &self.data.file_info[self.index];
+      let file_info = &self.data.file_info[self.index];
+      let file_info = FileDate::from(
+         &file_info.0,
+         &file_info.1,
+      );
 
       self.index += 1;
-      return Some(FileDate::from(
-         &file_data.0,
-         &file_data.1,
-      ));
+      return Some(file_info);
    }
 }
 

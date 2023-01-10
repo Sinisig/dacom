@@ -43,6 +43,13 @@ pub struct DateSet {
    list  : sorted_vec::SortedSet<crate::date::Date>,
 }
 
+/// An iterator over a DateSet created
+/// with the iter() method.
+pub struct DateSetIterator<'l> {
+   date_set : &'l DateSet,
+   index    : usize,
+}
+
 /// A DateSet gathered from a file on disk,
 /// storing the path to the file.
 pub struct FileDateSet {
@@ -132,6 +139,14 @@ impl DateSet {
    ) -> &'l [crate::date::Date] {
       return &self.list;
    }
+
+   /// Creates an iterator over the
+   /// dates stored in the date set.
+   pub fn iter<'l>(
+      &'l self,
+   ) -> DateSetIterator<'l> {
+      return DateSetIterator::new(self);
+   }
 }
 
 /////////////////////////////////////
@@ -199,6 +214,40 @@ impl std::cmp::Ord for DateSet {
       }
 
       return self.partial_cmp(other).unwrap();
+   }
+}
+
+///////////////////////////////
+// Methods - DateSetIterator //
+///////////////////////////////
+
+impl<'l> DateSetIterator<'l> {
+   /// Creates a new DateSetIterator which
+   /// operates on the given DateSet reference.
+   pub fn new(
+      date_set : &'l DateSet,
+   ) -> Self {
+      return Self{
+         date_set : date_set,
+         index    : 0,
+      };
+   }
+}
+
+/////////////////////////////////////////////
+// Trait implementations - DateSetIterator //
+/////////////////////////////////////////////
+
+impl<'l> std::iter::Iterator for DateSetIterator<'l> {
+   type Item = &'l crate::date::Date;
+
+   fn next(
+      & mut self,
+   ) -> Option<Self::Item> {
+      let item = self.date_set.as_slice().get(self.index);
+
+      self.index += 1;
+      return item;
    }
 }
 

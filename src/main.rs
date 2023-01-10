@@ -11,7 +11,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
    // Print the results
    for file in data.iter() {
       println!("{}", file.path().to_str().unwrap());
-      for date in file.dates().as_slice() {
+      for date in file.dates().iter() {
          println!("   {date}");
       }
       println!("");

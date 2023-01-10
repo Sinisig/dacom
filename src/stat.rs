@@ -14,9 +14,19 @@ pub struct DateList {
 /// file dating.
 #[derive(Copy, Clone, Debug)]
 pub enum FileDateError {
+   /// Permission was denied when accessing the file.
    PermissionDenied,
+
+   /// The given file path does not exist.
    FileNotFound,
+
+   /// The given file is a directory when a file was expected.
    FileIsDirectory,
+
+   /// The file contains binary when it should be text.
+   BinaryFile,
+
+   /// A general I/O error occurred.
    GeneralIOError,
 }
 
@@ -152,11 +162,16 @@ impl FileDateAggregate {
       }
 
       // Read the file as text
-      let file = match std::fs::read(&path) {
-         Ok(d)    => d,
-         Err(e)   => return Err(e.into()),
+      let file = match std::fs::read_to_string(path) {
+         Ok(txt)  => txt,
+         Err(err) => {
+            use std::io::ErrorKind;
+            match err.kind() {
+               ErrorKind::InvalidData => return Err(FileDateError::BinaryFile),
+               _  => return Err(err.into()),
+            }
+         },
       };
-      let file = String::from_utf8_lossy(&file).into_owned();
 
       // Search for dates within the file
       let mut date_list = crate::Date::from_text_multi_sorted_by(&file, |d1, d2| {
@@ -194,10 +209,16 @@ impl FileDateAggregate {
             }
          },
          Err(err)       => {
-            // If it is not a directory error, return that error
+            // If it's a directory, do nothing
+            // If it's binary data, exit early
+            // Otherwise return the error
             match err {
-               FileDateError::FileIsDirectory => (),
-               _ => return Err(err),
+               FileDateError::FileIsDirectory
+                  => (),
+               FileDateError::BinaryFile
+                  => return Ok(()),
+               _
+                  => return Err(err),
             }
 
             // Iterate for every file in the directory and try to parse it
@@ -334,6 +355,8 @@ impl std::fmt::Display for FileDateError {
             "File not found",
          Self::FileIsDirectory =>
             "File is a directory",
+         Self::BinaryFile =>
+            "File contains binary data",
          Self::GeneralIOError =>
             "General I/O error",
       });

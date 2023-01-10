@@ -37,6 +37,12 @@ pub enum CollectDateError {
 /// error type.
 pub type Result<T> = std::result::Result<T, CollectDateError>;
 
+/// A list of dates sorted from oldest
+/// to newest without duplicates.
+pub struct DateSet {
+   list  : sorted_vec::SortedSet<crate::date::Date>,
+}
+
 //////////////////////////////////////////////
 // Trait implementations - CollectDateError //
 //////////////////////////////////////////////
@@ -81,6 +87,100 @@ impl std::convert::From<std::io::Error> for CollectDateError {
          _
             => Self::GeneralIOError,
       }
+   }
+}
+
+///////////////////////
+// Methods - DateSet //
+///////////////////////
+
+impl DateSet {
+   /// Creates a new DateSet from
+   /// an unsorted Vec.
+   pub fn from(
+      data : Vec<crate::date::Date>,
+   ) -> Self {
+      let list = Self{
+         list  : sorted_vec::SortedSet::from_unsorted(data),
+      };
+
+      return list;
+   }
+
+   /// Gets a reference to the underlying
+   /// data slice.
+   pub fn as_slice<'l>(
+      &'l self,
+   ) -> &'l [crate::date::Date] {
+      return &self.list;
+   }
+}
+
+/////////////////////////////////////
+// Trait implementations - DateSet //
+/////////////////////////////////////
+
+impl std::ops::Deref for DateSet {
+   type Target = [crate::date::Date];
+
+   fn deref(
+      & self,
+   ) -> & Self::Target {
+      return self.as_slice();
+   }
+}
+
+impl std::cmp::PartialEq for DateSet {
+   fn eq(
+      & self,
+      other : & Self,
+   ) -> bool {
+      return self.as_slice().eq(other.as_slice());
+   }
+}
+
+impl std::cmp::PartialOrd for DateSet {
+   fn partial_cmp(
+      & self,
+      other : & Self,
+   ) -> Option<std::cmp::Ordering> {
+      use std::cmp::Ordering::*;
+
+      // Ordering works by looking first at the
+      // oldest date and comparing.  If they are
+      // equal, they compare the newest date.
+      // If they are still equal, compare the
+      // element count.
+      return match self.first()?.partial_cmp(other.first()?)? {
+         Greater  => Some(Greater),
+         Less     => Some(Less),
+         Equal    => self.last()?.partial_cmp(other.last()?),
+      };
+   }
+}
+
+impl std::cmp::Eq for DateSet {
+}
+
+impl std::cmp::Ord for DateSet {
+   fn cmp(
+      & self,
+      other : & Self,
+   ) -> std::cmp::Ordering {
+      use std::cmp::Ordering::*;
+
+      // Safety check if one or both have length 0
+      if self.is_empty() && other.is_empty() {
+         return Equal;
+      }
+      if self.is_empty() && !other.is_empty() {
+         return Less;
+      }
+      if !self.is_empty() && other.is_empty() {
+         return Greater;
+      }
+
+      return self.partial_cmp(other).unwrap();
    }
 }
 

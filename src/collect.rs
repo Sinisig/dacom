@@ -395,3 +395,86 @@ impl FileAggregateDateSet {
    }
 }
 
+////////////////////////////////////
+// Methods - FileAggregateDateSet //
+////////////////////////////////////
+
+impl FileAggregateDateSet {
+   /// Recursively searches a file or directory
+   /// for dating information and stores them in
+   /// a sorted set with no duplicates and no
+   /// files with zero found dates.
+   pub fn new_recursive<P>(
+      path  : P,
+   ) -> Result<Self>
+   where P: AsRef<std::path::Path> {
+      // Closure does nothing
+      return Self::new_recursive_with(
+         path,
+         |_| {},
+      );
+   }
+
+   /// Executes the same as Self::new_recursive,
+   /// but a user closure is executed for each file
+   /// that is searched.  The closure is passed the
+   /// path to the current file.
+   pub fn new_recursive_with<P, F>(
+      path     : P,
+      per_file : F,
+   ) -> Result<Self>
+   where P: AsRef<std::path::Path>,
+         F: Fn(& std::path::Path) + Copy {
+      // Convert the path into a PathBuf
+      let mut path_buf = std::path::PathBuf::new();
+      path_buf.push(path);
+
+      // Create the buffer for holding file date sets
+      let mut file_set_buffer = Vec::new();
+
+      // Populate the buffer with file into
+      Self::internal_search_dir_recursive_unsorted(
+         & mut file_set_buffer,
+         path_buf,
+         per_file,
+      )?;
+
+      // Sort the file set
+      let file_set_buffer = sorted_vec::SortedSet::from_unsorted(
+         file_set_buffer,
+      );
+
+      // Create the struct
+      let aggregate = Self{
+         files : file_set_buffer,
+      };
+
+      // Return success
+      return Ok(aggregate);
+   }
+
+   /// Accesses the underlying data as
+   /// a FileDateSet slice.  This is
+   /// equivalent to the Deref trait
+   /// which is implemented.
+   pub fn as_slice<'l>(
+      &'l self,
+   ) -> &'l [FileDateSet] {
+      return &self.files;
+   }
+}
+
+//////////////////////////////////////////////////
+// Trait implementations - FileAggregateDateSet //
+//////////////////////////////////////////////////
+
+impl std::ops::Deref for FileAggregateDateSet {
+   type Target = [FileDateSet];
+
+   fn deref(
+      & self,
+   ) -> & Self::Target {
+      return self.as_slice();
+   }
+}
+

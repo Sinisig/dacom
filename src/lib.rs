@@ -7,6 +7,10 @@ pub mod date;
 
 // Re-exports
 pub use args::Args;
+pub use collect::CollectDateError;
+pub use collect::DateSet;
+pub use collect::FileDateSet;
+pub use collect::FileAggregateDateSet;
 pub use date::Month;
 pub use date::Date;
 

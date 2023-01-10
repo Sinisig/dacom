@@ -50,6 +50,12 @@ pub struct FileDateSet {
    dates : DateSet,
 }
 
+/// A sorted set of many different files
+/// containing their collected dates.
+pub struct FileAggregateDateSet {
+   files : sorted_vec::SortedSet<FileDateSet>,
+}
+
 //////////////////////////////////////////////
 // Trait implementations - CollectDateError //
 //////////////////////////////////////////////
@@ -266,48 +272,34 @@ impl std::cmp::Ord for FileDateSet {
    }
 }
 
-/*
+/////////////////////////////////////////////
+// Internal helpers - FileAggregateDateSet //
+/////////////////////////////////////////////
 
-//////////////////////////////////////////
-// Internal helpers - FileDateAggregate //
-//////////////////////////////////////////
+impl FileAggregateDateSet {
+   /// Searches an input text stream for
+   /// dates and return a DateSet containing
+   /// the found dates.
+   fn internal_collect_dates(
+      text  : & str,
+   ) -> DateSet {
+      // Get an unsorted list of dates
+      let dates = crate::date::Date::from_text_multi(text);
 
-impl FileDateAggregate {
-   /// Sorts the input data from oldest
-   /// file to newest file.  This is done
-   /// by looking at the oldest date from each
-   /// file and sorting by that.  If two of
-   /// the oldest dates are equal, then the
-   /// newest date is used.  If they are
-   /// still equal, the file names are used
-   /// for the comparison.
-   fn internal_sort(
-      mut self,
-   ) -> Self {
-      self.file_info.sort_unstable_by(|(file1, date1), (file2, date2)| {
-         use std::cmp::Ordering::*;
+      // Sort and remove duplicates
+      let dates = DateSet::from(dates);
 
-         match date1.first().unwrap().cmp(&date2.first().unwrap()) {
-            Less     => Less,
-            Greater  => Greater,
-            Equal    => match date1.last().unwrap().cmp(&date2.last().unwrap()) {
-               Less     => Less,
-               Greater  => Greater,
-               Equal    => file1.cmp(file2),
-            },
-         }
-      });
-
-      return self;
+      // Return success
+      return dates;
    }
 
    /// Searches a single file for dates and returns
-   /// a DateList containing all the found dates.
-   fn internal_collect_single<F>(
-      path     : & str,
+   /// a DateSet containing all the found dates.
+   fn internal_search_file_single<F>(
+      path     : & std::path::Path,
       per_file : F,
-   ) -> Result<DateList, FileDateError>
-   where F: Fn(& str) {
+   ) -> Result<DateSet>
+   where F: Fn(& std::path::Path) {
       // Execute the user closure
       per_file(path);
 
@@ -316,11 +308,11 @@ impl FileDateAggregate {
          Ok(md)   => md,
          Err(e)   => return Err(e.into()),
       }.is_dir() == true {
-         return Err(FileDateError::FileIsDirectory);
+         return Err(CollectDateError::FileIsDirectory);
       }
 
       // Map the file into memory as a string slice
-      let file = match std::fs::File::open(&path) {
+      let file = match std::fs::File::open(path) {
          Ok(f)    => f,
          Err(e)   => return Err(e.into()),
       };
@@ -330,43 +322,37 @@ impl FileDateAggregate {
       };
       let file = match std::str::from_utf8(&file) {
          Ok(d)    => d,
-         Err(_)   => return Err(FileDateError::BinaryFile),
+         Err(_)   => return Err(CollectDateError::InvalidData),
       };
 
       // Search for dates within the file
-      let mut date_list = crate::Date::from_text_multi_sorted_by(
-         &file,
-         |d1, d2| {
-            d1.cmp(&d2)
-         },
-      );
-      
-      // Sort the date list
-      date_list.sort_unstable();
+      let list = Self::internal_collect_dates(&file);
 
       // Return success
-      return Ok(DateList::from(date_list));
+      return Ok(list);
    }
 
-   /// Searches a file path recursively for any
-   /// and all files containing dates.  If the
-   /// file is binary or contains no dates, it
-   /// is not added.  If the file is a directory,
-   /// it is recursively searched and every file
-   /// in the directory is searched.
-   fn internal_collect_recursive_unsorted<F>(
-      file_info_buffer  : & mut Vec<(String, DateList)>,
-      path              : String,
+   /// Searches a file path for dates in a file,
+   /// searching all files recursively in any
+   /// directories encountered.  The file data is
+   /// not sorted in this function.
+   fn internal_search_dir_recursive_unsorted<F>(
+      file_set_buffer   : & mut Vec<FileDateSet>,
+      path              : std::path::PathBuf,
       per_file          : F,
-   ) -> Result<(), FileDateError>
-   where F: Fn(& str) + Copy {
+   ) -> Result<()>
+   where F: Fn(& std::path::Path) + Copy {
       // Try to parse the file path, if it errors as a directory, recursively
       // search that directory
-      match Self::internal_collect_single(&path, per_file) {
-         Ok(data_list)  => {
-            // If the data list contains dates, add the file to the buffers
-            if data_list.is_empty() == false {
-               file_info_buffer.push((path, data_list));
+      match Self::internal_search_file_single(&path, per_file) {
+         Ok(date_set)  => {
+            // If the data list contains dates, sort the dates
+            // and add them and the path to the buffer
+            if date_set.is_empty() == false {
+               file_set_buffer.push(FileDateSet::from(
+                  path,
+                  date_set,
+               ));
             }
          },
          Err(err)       => {
@@ -374,9 +360,9 @@ impl FileDateAggregate {
             // If it's binary data, exit early
             // Otherwise return the error
             match err {
-               FileDateError::FileIsDirectory
+               CollectDateError::FileIsDirectory
                   => (),
-               FileDateError::BinaryFile
+               CollectDateError::InvalidData
                   => return Ok(()),
                _
                   => return Err(err),
@@ -394,14 +380,10 @@ impl FileDateAggregate {
                   Err(e)   => return Err(e.into()),
                };
 
-               // Copy the new directory path into a String
-               // TODO: Smarter way of doing this
-               let path = file.path().into_os_string().into_string().unwrap();
-
                // Try to parse the new file/directory
-               Self::internal_collect_recursive_unsorted(
-                  file_info_buffer,
-                  path,
+               Self::internal_search_dir_recursive_unsorted(
+                  file_set_buffer,
+                  file.path(),
                   per_file,
                )?;
             }
@@ -412,6 +394,4 @@ impl FileDateAggregate {
       return Ok(());
    }
 }
-
-*/
 

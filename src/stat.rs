@@ -39,12 +39,8 @@ pub struct FileDate<'l> {
 
 /// A collection of files with their dating
 /// information.
-pub struct FileDateAggregate {
-   // Implemented as SoA for better cache performance.
-   // Each element of file_names corresponds 1:1 with
-   // an element of the same index from file_dates.
-   file_names  : Vec<String>,
-   file_dates  : Vec<DateList>,
+pub struct FileDateAggregate { 
+   file_info   : Vec<(String, DateList)>,
 }
 
 /// An iterator over a FileDateAggregate object.
@@ -197,10 +193,9 @@ impl FileDateAggregate {
    /// it is recursively searched and every file
    /// in the directory is searched.
    fn internal_collect_recursive_unsorted<F>(
-      file_name_buffer  : & mut Vec<String>,
-      file_date_buffer  : & mut Vec<DateList>,
-      path     : String,
-      per_file : F,
+      file_info_buffer  : & mut Vec<(String, DateList)>,
+      path              : String,
+      per_file          : F,
    ) -> Result<(), FileDateError>
    where F: Fn(& str) + Copy {
       // Try to parse the file path, if it errors as a directory, recursively
@@ -209,8 +204,7 @@ impl FileDateAggregate {
          Ok(data_list)  => {
             // If the data list contains dates, add the file to the buffers
             if data_list.is_empty() == false {
-               file_name_buffer.push(path);
-               file_date_buffer.push(data_list);
+               file_info_buffer.push((path, data_list));
             }
          },
          Err(err)       => {
@@ -244,8 +238,7 @@ impl FileDateAggregate {
 
                // Try to parse the new file/directory
                Self::internal_collect_recursive_unsorted(
-                  file_name_buffer,
-                  file_date_buffer,
+                  file_info_buffer,
                   path,
                   per_file,
                )?;
@@ -273,19 +266,16 @@ impl FileDateAggregate {
    ) -> Result<Self, FileDateError>
    where F: Fn(& str) + Copy {
       // Get the unsorted data
-      let mut file_names = Vec::new();
-      let mut file_dates = Vec::new();
+      let mut file_info = Vec::new();
       Self::internal_collect_recursive_unsorted(
-         & mut file_names,
-         & mut file_dates,
+         & mut file_info,
          String::from(path),
          per_file,
       )?;
 
       // Create the struct and sort it
       let data = Self{
-         file_names  : file_names,
-         file_dates  : file_dates,
+         file_info   : file_info,
       }.internal_sort();
 
       // Return success
@@ -303,7 +293,7 @@ impl FileDateAggregate {
    pub fn count(
       & self,
    ) -> usize {
-      return self.file_names.len();
+      return self.file_info.len();
    }
 }
 
@@ -336,10 +326,12 @@ impl<'l> std::iter::Iterator for FileDateAggregateIterator<'l> {
          return None;
       }
 
+      let file_data = &self.data.file_info[self.index];
+
       self.index += 1;
       return Some(FileDate::from(
-         &self.data.file_names[self.index - 1],
-         &self.data.file_dates[self.index - 1],
+         &file_data.0,
+         &file_data.1,
       ));
    }
 }

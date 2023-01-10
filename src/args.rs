@@ -2,9 +2,9 @@
 
 use clap::Parser;
 
-
-/* Struct and enum definitions */
-
+/////////////////////////////////
+// Struct and enum definitions //
+/////////////////////////////////
 
 /// Struct for storing arguments.
 #[derive(clap::Parser, Debug)]
@@ -37,9 +37,9 @@ pub struct Args {
    verbose     : bool,
 }
 
-
-/* Methods - Args */
-
+////////////////////
+// Methods - Args //
+////////////////////
 
 impl Args {
    /// Creates a new list of arguments from

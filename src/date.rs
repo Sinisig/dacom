@@ -1,8 +1,8 @@
 //! Date utilities
 
-
-/* Struct and enum definitions */
-
+/////////////////////////////////
+// Struct and enum definitions //
+/////////////////////////////////
 
 /// Error type detailing a parsing error for Month.
 #[derive(Copy, Clone, Debug)]
@@ -55,9 +55,9 @@ pub struct Date {
    year  : isize,
 }
 
-
-/* Trait implementations - ParseMonthError */
-
+/////////////////////////////////////////////
+// Trait implementations - ParseMonthError //
+/////////////////////////////////////////////
 
 impl std::fmt::Display for ParseMonthError {
    fn fmt(&self, stream : & mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -70,9 +70,9 @@ impl std::fmt::Display for ParseMonthError {
 impl std::error::Error for ParseMonthError {
 }
 
-
-/* Methods - Month */
-
+/////////////////////
+// Methods - Month //
+/////////////////////
 
 impl Month {
    /// Retrieves the amount of days in the given
@@ -95,9 +95,9 @@ impl Month {
    }
 }
 
-
-/* Trait implementations - Month */
-
+///////////////////////////////////
+// Trait implementations - Month //
+///////////////////////////////////
 
 impl std::fmt::Display for Month {
    fn fmt(&self, stream : & mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -167,9 +167,9 @@ impl std::str::FromStr for Month {
    }
 }
 
-
-/* Trait implementations - ParseDateError */
-
+////////////////////////////////////////////
+// Trait implementations - ParseDateError //
+////////////////////////////////////////////
 
 impl std::fmt::Display for ParseDateError {
    fn fmt(&self, stream : & mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -186,9 +186,9 @@ impl std::fmt::Display for ParseDateError {
 impl std::error::Error for ParseDateError {
 }
 
-
-/* Methods - Date */
-
+////////////////////
+// Methods - Date //
+////////////////////
 
 impl Date {
    /// Parses text containing a single date string
@@ -362,9 +362,9 @@ impl Date {
    }
 }
 
-
-/* Trait implementations - Date */
-
+//////////////////////////////////
+// Trait implementations - Date //
+//////////////////////////////////
 
 impl std::cmp::PartialOrd for Date {
    fn partial_cmp(&self, other : &Self) -> Option<std::cmp::Ordering> {

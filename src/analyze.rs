@@ -1,8 +1,8 @@
 //! Tools for performing a statistical anaysis of data.
 
-
-/* Struct and enum definitions */
-
+/////////////////////////////////
+// Struct and enum definitions //
+/////////////////////////////////
 
 /// Contains the results from analyzing the data
 /// collected from FileDateAggregate.
@@ -12,9 +12,9 @@ pub struct FileDateReport<'l> {
    max   : crate::FileDate<'l>,
 }
 
-
-/* Methods - FileDateReport */
-
+//////////////////////////////
+// Methods - FileDateReport //
+//////////////////////////////
 
 impl<'l> FileDateReport<'l> {
    /// Creates a new data report from a list
@@ -32,9 +32,9 @@ impl<'l> FileDateReport<'l> {
    }
 }
 
-
-/* Trait implementations - FileDateReport */
-
+////////////////////////////////////////////
+// Trait implementations - FileDateReport //
+////////////////////////////////////////////
 
 impl<'l> std::fmt::Display for FileDateReport<'l> {
    fn fmt(

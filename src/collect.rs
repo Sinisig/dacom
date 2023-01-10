@@ -1,8 +1,8 @@
 //! Utilities for aggregating and analyzing data.
 
-
-/* Struct and enum definitions */
-
+/////////////////////////////////
+// Struct and enum definitions //
+/////////////////////////////////
 
 /// A sorted list of dates from oldest to
 /// newest.
@@ -49,9 +49,9 @@ pub struct FileDateAggregateIterator<'l> {
    data  : &'l FileDateAggregate,
 }
 
-
-/* Methods - DateList */
-
+////////////////////////
+// Methods - DateList //
+////////////////////////
 
 impl DateList {
    /// Creates a new Date List from an existing
@@ -76,9 +76,9 @@ impl DateList {
    }
 }
 
-
-/* Trait implementations - DateList */
-
+//////////////////////////////////////
+// Trait implementations - DateList //
+//////////////////////////////////////
 
 impl std::ops::Deref for DateList {
    type Target = [crate::Date];
@@ -88,9 +88,9 @@ impl std::ops::Deref for DateList {
    }
 }
 
-
-/* Methods - FileDate */
-
+////////////////////////
+// Methods - FileDate //
+////////////////////////
 
 impl<'l> FileDate<'l> {
    /// Creates a new File Date from a
@@ -120,7 +120,9 @@ impl<'l> FileDate<'l> {
    }
 }
 
-/* Internal helpers - FileDateAggregate */
+//////////////////////////////////////////
+// Internal helpers - FileDateAggregate //
+//////////////////////////////////////////
 
 impl FileDateAggregate {
    /// Sorts the input data from oldest
@@ -263,8 +265,9 @@ impl FileDateAggregate {
    }
 }
 
-/* Methods - FileDateAggregate */
-
+/////////////////////////////////
+// Methods - FileDateAggregate //
+/////////////////////////////////
 
 impl FileDateAggregate { 
    /// Searches a file for files with dating
@@ -327,9 +330,9 @@ impl FileDateAggregate {
    }
 }
 
-
-/* Methods - FileDateAggregateIterator */
-
+/////////////////////////////////////////
+// Methods - FileDateAggregateIterator //
+/////////////////////////////////////////
 
 impl<'l> FileDateAggregateIterator<'l> {
    /// Creates a new iterator from an existing
@@ -344,9 +347,9 @@ impl<'l> FileDateAggregateIterator<'l> {
    }
 }
 
-
-/* Trait implementations - FileDateAggregateIterator */
-
+///////////////////////////////////////////////////////
+// Trait implementations - FileDateAggregateIterator //
+///////////////////////////////////////////////////////
 
 impl<'l> std::iter::Iterator for FileDateAggregateIterator<'l> {
    type Item = FileDate<'l>;
@@ -367,9 +370,9 @@ impl<'l> std::iter::Iterator for FileDateAggregateIterator<'l> {
    }
 }
 
-
-/* Trait implementations - FileDateError */
-
+///////////////////////////////////////////
+// Trait implementations - FileDateError //
+///////////////////////////////////////////
 
 impl std::fmt::Display for FileDateError {
    fn fmt(

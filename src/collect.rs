@@ -43,6 +43,13 @@ pub struct DateSet {
    list  : sorted_vec::SortedSet<crate::date::Date>,
 }
 
+/// A DateSet gathered from a file on disk,
+/// storing the path to the file.
+pub struct FileDateSet {
+   path  : std::path::PathBuf,
+   dates : DateSet,
+}
+
 //////////////////////////////////////////////
 // Trait implementations - CollectDateError //
 //////////////////////////////////////////////
@@ -100,11 +107,9 @@ impl DateSet {
    pub fn from(
       data : Vec<crate::date::Date>,
    ) -> Self {
-      let list = Self{
+      return Self{
          list  : sorted_vec::SortedSet::from_unsorted(data),
       };
-
-      return list;
    }
 
    /// Gets a reference to the underlying
@@ -180,6 +185,83 @@ impl std::cmp::Ord for DateSet {
          return Greater;
       }
 
+      return self.partial_cmp(other).unwrap();
+   }
+}
+
+///////////////////////////
+// Methods - FileDateSet //
+///////////////////////////
+
+impl FileDateSet {
+   /// Creates a new FileDateSet from
+   /// an existing path buffer and
+   /// date set.
+   pub fn from(
+      path  : std::path::PathBuf,
+      dates : DateSet,
+   ) -> Self {
+      return Self{
+         path  : path,
+         dates : dates,
+      };
+   }
+   
+   /// Get a reference to the file's
+   /// path.
+   pub fn path<'l>(
+      &'l self,
+   ) -> &'l std::path::Path {
+      return &self.path;
+   }
+
+   /// Get a reference to the file's
+   /// collected date set.
+   pub fn dates<'l>(
+      &'l self,
+   ) -> &'l DateSet {
+      return &self.dates;
+   }
+}
+
+/////////////////////////////////////////
+// Trait implementations - FileDateSet //
+/////////////////////////////////////////
+
+impl std::cmp::PartialEq for FileDateSet {
+   fn eq(
+      & self,
+      other : & Self,
+   ) -> bool {
+      return self.path().eq(other.path()) && self.dates().eq(other.dates());
+   }
+}
+
+impl std::cmp::PartialOrd for FileDateSet {
+   fn partial_cmp(
+      & self,
+      other : & Self,
+   ) -> Option<std::cmp::Ordering> {
+      use std::cmp::Ordering::*;
+
+      // Date order takes precedence over file
+      // name.
+      return match self.dates().cmp(other.dates()) {
+         Greater  => Some(Greater),
+         Less     => Some(Less),
+         Equal    => self.path().partial_cmp(other.path()),
+      };
+   }
+}
+
+impl std::cmp::Eq for FileDateSet {
+}
+
+impl std::cmp::Ord for FileDateSet {
+   fn cmp(
+      & self,
+      other : & Self,
+   ) -> std::cmp::Ordering {
       return self.partial_cmp(other).unwrap();
    }
 }

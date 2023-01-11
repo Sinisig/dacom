@@ -526,6 +526,14 @@ impl FileAggregateDateSet {
    ) -> FileAggregateDateSetIterator<'l> {
       return FileAggregateDateSetIterator::new(self);
    }
+
+   /// Creates a FileAggregateReport from
+   /// the data.
+   pub fn create_report<'l>(
+      &'l self,
+   ) -> crate::report::FileAggregateReport<'l> {
+      return crate::report::FileAggregateReport::from(self);
+   }
 }
 
 //////////////////////////////////////////////////

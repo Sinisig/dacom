@@ -8,13 +8,14 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
       |path| println!("Searched {}", path.to_str().unwrap()),
    )?;
    
-   // Print the results
-   for file in data.iter() {
-      println!("{}", file.path().to_str().unwrap());
-      for date in file.dates().iter() {
-         println!("   {date}");
-      }
-      println!("");
+   // Create a data report
+   let data = data.create_report();
+
+   // Send the data to the appropriate file stream
+   if let Some(path) = &args.output_file() {
+      std::fs::write(path, data.to_string())?;
+   } else {
+      print!("{data}");
    }
 
    // Return success

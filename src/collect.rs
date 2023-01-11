@@ -38,9 +38,9 @@ pub enum CollectDateError {
 pub type Result<T> = std::result::Result<T, CollectDateError>;
 
 /// A list of dates sorted from oldest
-/// to newest without duplicates.
+/// to newest.
 pub struct DateSet {
-   list  : sorted_vec::SortedSet<crate::date::Date>,
+   list  : sorted_vec::SortedVec<crate::date::Date>,
 }
 
 /// An iterator over a DateSet created
@@ -57,10 +57,10 @@ pub struct FileDateSet {
    dates : DateSet,
 }
 
-/// A sorted set of many different files
+/// A sorted list of many different files
 /// containing their collected dates.
 pub struct FileAggregateDateSet {
-   files : sorted_vec::SortedSet<FileDateSet>,
+   files : sorted_vec::SortedVec<FileDateSet>,
 }
 
 /// An iterator over a FileAggregateDateSet created
@@ -128,7 +128,7 @@ impl DateSet {
       data : Vec<crate::date::Date>,
    ) -> Self {
       return Self{
-         list  : sorted_vec::SortedSet::from_unsorted(data),
+         list  : sorted_vec::SortedVec::from_unsorted(data),
       };
    }
 
@@ -496,7 +496,7 @@ impl FileAggregateDateSet {
       )?;
 
       // Sort the file set
-      let file_set_buffer = sorted_vec::SortedSet::from_unsorted(
+      let file_set_buffer = sorted_vec::SortedVec::from_unsorted(
          file_set_buffer,
       );
 

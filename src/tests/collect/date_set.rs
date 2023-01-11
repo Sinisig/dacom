@@ -20,6 +20,7 @@ fn methods() {
    let r0 = vec![
       Date::new(01, January,  1995).unwrap(),
       Date::new(01, January,  2000).unwrap(),
+      Date::new(01, January,  2000).unwrap(),
       Date::new(02, January,  2000).unwrap(),
       Date::new(01, February, 2000).unwrap(),
    ];

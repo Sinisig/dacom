@@ -405,7 +405,7 @@ impl FileAggregateDateList {
    /// directories encountered.  The file data is
    /// not sorted in this function.
    fn internal_search_dir_recursive_unsorted<F>(
-      file_set_buffer   : & mut Vec<FileDateList>,
+      file_list_buffer  : & mut sorted_vec::SortedVec<FileDateList>,
       path              : std::path::PathBuf,
       per_file          : F,
    ) -> Result<()>
@@ -417,7 +417,7 @@ impl FileAggregateDateList {
             // If the data list contains dates, sort the dates
             // and add them and the path to the buffer
             if date_set.is_empty() == false {
-               file_set_buffer.push(FileDateList::from(
+               file_list_buffer.push(FileDateList::from(
                   path,
                   date_set,
                ));
@@ -450,7 +450,7 @@ impl FileAggregateDateList {
 
                // Try to parse the new file/directory
                Self::internal_search_dir_recursive_unsorted(
-                  file_set_buffer,
+                  file_list_buffer,
                   file.path(),
                   per_file,
                )?;
@@ -497,24 +497,19 @@ impl FileAggregateDateList {
       let mut path_buf = std::path::PathBuf::new();
       path_buf.push(path);
 
-      // Create the buffer for holding file date sets
-      let mut file_set_buffer = Vec::new();
+      // Create the buffer for holding file date lists
+      let mut file_list_buffer = sorted_vec::SortedVec::new();
 
       // Populate the buffer with file into
       Self::internal_search_dir_recursive_unsorted(
-         & mut file_set_buffer,
+         & mut file_list_buffer,
          path_buf,
          per_file,
       )?;
 
-      // Sort the file set
-      let file_set_buffer = sorted_vec::SortedVec::from_unsorted(
-         file_set_buffer,
-      );
-
       // Create the struct
       let aggregate = Self{
-         files : file_set_buffer,
+         files : file_list_buffer,
       };
 
       // Return success

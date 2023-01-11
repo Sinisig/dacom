@@ -1,4 +1,4 @@
-//! Unit tests for crate::collect::FileDateSet.
+//! Unit tests for crate::collect::FileDateList.
 
 #[test]
 fn methods() {
@@ -9,8 +9,8 @@ fn methods() {
          Month::*,
       },
       collect::{
-         FileDateSet,
-         DateSet,
+         FileDateList,
+         DateList,
       },
    };
 
@@ -23,13 +23,13 @@ fn methods() {
       Date::new(24, December, 1995).unwrap(),
    ];
 
-   let f0 = FileDateSet::from(
+   let f0 = FileDateList::from(
       path.clone(),
-      DateSet::from(dates.clone()),
+      DateList::from(dates.clone()),
    );
 
    assert!(f0.path()    == &path);
-   assert!(f0.dates()   == &DateSet::from(dates));
+   assert!(f0.dates()   == &DateList::from(dates));
 
    return;
 }
@@ -46,8 +46,8 @@ fn trait_std_cmp_ord() {
          Month::*,
       },
       collect::{
-         FileDateSet,
-         DateSet,
+         FileDateList,
+         DateList,
       },
    };
 
@@ -69,56 +69,56 @@ fn trait_std_cmp_ord() {
    p6.push("foo7.txt");
    p7.push("foo7.txt");
 
-   let f0 = FileDateSet::from(
+   let f0 = FileDateList::from(
       p0,
-      DateSet::from(vec![
+      DateList::from(vec![
          Date::new(01, January,  2000).unwrap(),
          Date::new(05, January,  2004).unwrap(),
       ]),
    );
-   let f1 = FileDateSet::from(
+   let f1 = FileDateList::from(
       p1,
-      DateSet::from(vec![
+      DateList::from(vec![
          Date::new(01, January,  2000).unwrap(),
          Date::new(05, January,  2004).unwrap(),
       ]),
    );
-   let f2 = FileDateSet::from(
+   let f2 = FileDateList::from(
       p2,
-      DateSet::from(vec![
+      DateList::from(vec![
          Date::new(02, January,  2000).unwrap(),
          Date::new(21, March,    2002).unwrap(),
          Date::new(05, January,  2004).unwrap(),
       ]),
    );
-   let f3 = FileDateSet::from(
+   let f3 = FileDateList::from(
       p3,
-      DateSet::from(vec![
+      DateList::from(vec![
          Date::new(01, January,  2000).unwrap(),
          Date::new(05, April,    2004).unwrap(),
       ]),
    );
-   let f4 = FileDateSet::from(
+   let f4 = FileDateList::from(
       p4,
-      DateSet::from(vec![
+      DateList::from(vec![
          Date::new(29, December, 1999).unwrap(),
          Date::new(05, January,  2004).unwrap(),
       ]),
    );
-   let f5 = FileDateSet::from(
+   let f5 = FileDateList::from(
       p5,
-      DateSet::from(vec![
+      DateList::from(vec![
          Date::new(01, January,  2000).unwrap(),
          Date::new(30, January,  2001).unwrap(),
       ]),
    );
-   let f6 = FileDateSet::from(
+   let f6 = FileDateList::from(
       p6,
-      DateSet::from(Vec::new()),
+      DateList::from(Vec::new()),
    );
-   let f7 = FileDateSet::from(
+   let f7 = FileDateList::from(
       p7,
-      DateSet::from(Vec::new()),
+      DateList::from(Vec::new()),
    );
 
    assert!(f0.cmp(&f0) == Equal  );

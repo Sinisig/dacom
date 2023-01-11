@@ -7,7 +7,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
       "Starting search for and collection of dates starting at {}...",
       &args.input_file(),
    )};
-   let data = dacom::FileAggregateDateSet::new_recursive_with(
+   let data = dacom::FileAggregateDateList::new_recursive_with(
       &args.input_file(),
       if args.verbose() {
          |path : & std::path::Path| {

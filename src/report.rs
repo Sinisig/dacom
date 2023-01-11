@@ -8,9 +8,9 @@
 /// of statistically analyzing a collection
 /// of files dates.
 pub struct FileAggregateReport<'l> {
-   raw_data : &'l crate::collect::FileAggregateDateSet,
-   oldest   : &'l crate::collect::FileDateSet,
-   newest   : &'l crate::collect::FileDateSet,
+   raw_data : &'l crate::collect::FileAggregateDateList,
+   oldest   : &'l crate::collect::FileDateList,
+   newest   : &'l crate::collect::FileDateList,
 }
 
 ///////////////////////////////////
@@ -22,7 +22,7 @@ impl<'l> FileAggregateReport<'l> {
    /// from an existing file aggregate date
    /// set.
    pub fn from(
-      file_data   : &'l crate::collect::FileAggregateDateSet,
+      file_data   : &'l crate::collect::FileAggregateDateList,
    ) -> Self {
       let oldest = &file_data.as_slice().first().unwrap();
       let newest = &file_data.as_slice().last().unwrap();

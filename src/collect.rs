@@ -39,34 +39,34 @@ pub type Result<T> = std::result::Result<T, CollectDateError>;
 
 /// A list of dates sorted from oldest
 /// to newest.
-pub struct DateSet {
+pub struct DateList {
    list  : sorted_vec::SortedVec<crate::date::Date>,
 }
 
-/// An iterator over a DateSet created
+/// An iterator over a DateList created
 /// with the iter() method.
-pub struct DateSetIterator<'l> {
-   date_set : &'l DateSet,
+pub struct DateListIterator<'l> {
+   date_set : &'l DateList,
    index    : usize,
 }
 
-/// A DateSet gathered from a file on disk,
+/// A DateList gathered from a file on disk,
 /// storing the path to the file.
-pub struct FileDateSet {
+pub struct FileDateList {
    path  : std::path::PathBuf,
-   dates : DateSet,
+   dates : DateList,
 }
 
 /// A sorted list of many different files
 /// containing their collected dates.
-pub struct FileAggregateDateSet {
-   files : sorted_vec::SortedVec<FileDateSet>,
+pub struct FileAggregateDateList {
+   files : sorted_vec::SortedVec<FileDateList>,
 }
 
-/// An iterator over a FileAggregateDateSet created
+/// An iterator over a FileAggregateDateList created
 /// with the iter() method.
-pub struct FileAggregateDateSetIterator<'l> {
-   data  : &'l FileAggregateDateSet,
+pub struct FileAggregateDateListIterator<'l> {
+   data  : &'l FileAggregateDateList,
    index : usize,
 }
 
@@ -117,12 +117,12 @@ impl std::convert::From<std::io::Error> for CollectDateError {
    }
 }
 
-///////////////////////
-// Methods - DateSet //
-///////////////////////
+////////////////////////
+// Methods - DateList //
+////////////////////////
 
-impl DateSet {
-   /// Creates a new DateSet from
+impl DateList {
+   /// Creates a new DateList from
    /// an unsorted Vec.
    pub fn from(
       data : Vec<crate::date::Date>,
@@ -144,16 +144,16 @@ impl DateSet {
    /// dates stored in the date set.
    pub fn iter<'l>(
       &'l self,
-   ) -> DateSetIterator<'l> {
-      return DateSetIterator::new(self);
+   ) -> DateListIterator<'l> {
+      return DateListIterator::new(self);
    }
 }
 
-/////////////////////////////////////
-// Trait implementations - DateSet //
-/////////////////////////////////////
+//////////////////////////////////////
+// Trait implementations - DateList //
+//////////////////////////////////////
 
-impl std::ops::Deref for DateSet {
+impl std::ops::Deref for DateList {
    type Target = [crate::date::Date];
 
    fn deref(
@@ -163,7 +163,7 @@ impl std::ops::Deref for DateSet {
    }
 }
 
-impl std::cmp::PartialEq for DateSet {
+impl std::cmp::PartialEq for DateList {
    fn eq(
       & self,
       other : & Self,
@@ -172,7 +172,7 @@ impl std::cmp::PartialEq for DateSet {
    }
 }
 
-impl std::cmp::PartialOrd for DateSet {
+impl std::cmp::PartialOrd for DateList {
    fn partial_cmp(
       & self,
       other : & Self,
@@ -192,10 +192,10 @@ impl std::cmp::PartialOrd for DateSet {
    }
 }
 
-impl std::cmp::Eq for DateSet {
+impl std::cmp::Eq for DateList {
 }
 
-impl std::cmp::Ord for DateSet {
+impl std::cmp::Ord for DateList {
    fn cmp(
       & self,
       other : & Self,
@@ -217,15 +217,15 @@ impl std::cmp::Ord for DateSet {
    }
 }
 
-///////////////////////////////
-// Methods - DateSetIterator //
-///////////////////////////////
+////////////////////////////////
+// Methods - DateListIterator //
+////////////////////////////////
 
-impl<'l> DateSetIterator<'l> {
-   /// Creates a new DateSetIterator which
-   /// operates on the given DateSet reference.
+impl<'l> DateListIterator<'l> {
+   /// Creates a new DateListIterator which
+   /// operates on the given DateList reference.
    pub fn new(
-      date_set : &'l DateSet,
+      date_set : &'l DateList,
    ) -> Self {
       return Self{
          date_set : date_set,
@@ -234,11 +234,11 @@ impl<'l> DateSetIterator<'l> {
    }
 }
 
-/////////////////////////////////////////////
-// Trait implementations - DateSetIterator //
-/////////////////////////////////////////////
+//////////////////////////////////////////////
+// Trait implementations - DateListIterator //
+//////////////////////////////////////////////
 
-impl<'l> std::iter::Iterator for DateSetIterator<'l> {
+impl<'l> std::iter::Iterator for DateListIterator<'l> {
    type Item = &'l crate::date::Date;
 
    fn next(
@@ -251,17 +251,17 @@ impl<'l> std::iter::Iterator for DateSetIterator<'l> {
    }
 }
 
-///////////////////////////
-// Methods - FileDateSet //
-///////////////////////////
+////////////////////////////
+// Methods - FileDateList //
+////////////////////////////
 
-impl FileDateSet {
-   /// Creates a new FileDateSet from
+impl FileDateList {
+   /// Creates a new FileDateList from
    /// an existing path buffer and
    /// date set.
    pub fn from(
       path  : std::path::PathBuf,
-      dates : DateSet,
+      dates : DateList,
    ) -> Self {
       return Self{
          path  : path,
@@ -281,16 +281,16 @@ impl FileDateSet {
    /// collected date set.
    pub fn dates<'l>(
       &'l self,
-   ) -> &'l DateSet {
+   ) -> &'l DateList {
       return &self.dates;
    }
 }
 
-/////////////////////////////////////////
-// Trait implementations - FileDateSet //
-/////////////////////////////////////////
+//////////////////////////////////////////
+// Trait implementations - FileDateList //
+//////////////////////////////////////////
 
-impl std::cmp::PartialEq for FileDateSet {
+impl std::cmp::PartialEq for FileDateList {
    fn eq(
       & self,
       other : & Self,
@@ -299,7 +299,7 @@ impl std::cmp::PartialEq for FileDateSet {
    }
 }
 
-impl std::cmp::PartialOrd for FileDateSet {
+impl std::cmp::PartialOrd for FileDateList {
    fn partial_cmp(
       & self,
       other : & Self,
@@ -316,10 +316,10 @@ impl std::cmp::PartialOrd for FileDateSet {
    }
 }
 
-impl std::cmp::Eq for FileDateSet {
+impl std::cmp::Eq for FileDateList {
 }
 
-impl std::cmp::Ord for FileDateSet {
+impl std::cmp::Ord for FileDateList {
    fn cmp(
       & self,
       other : & Self,
@@ -328,33 +328,33 @@ impl std::cmp::Ord for FileDateSet {
    }
 }
 
-/////////////////////////////////////////////
-// Internal helpers - FileAggregateDateSet //
-/////////////////////////////////////////////
+//////////////////////////////////////////////
+// Internal helpers - FileAggregateDateList //
+//////////////////////////////////////////////
 
-impl FileAggregateDateSet {
+impl FileAggregateDateList {
    /// Searches an input text stream for
-   /// dates and return a DateSet containing
+   /// dates and return a DateList containing
    /// the found dates.
    fn internal_collect_dates(
       text  : & str,
-   ) -> DateSet {
+   ) -> DateList {
       // Get an unsorted list of dates
       let dates = crate::date::Date::from_text_multi(text);
 
       // Sort and remove duplicates
-      let dates = DateSet::from(dates);
+      let dates = DateList::from(dates);
 
       // Return success
       return dates;
    }
 
    /// Searches a single file for dates and returns
-   /// a DateSet containing all the found dates.
+   /// a DateList containing all the found dates.
    fn internal_search_file_single<F>(
       path     : & std::path::Path,
       per_file : F,
-   ) -> Result<DateSet>
+   ) -> Result<DateList>
    where F: Fn(& std::path::Path) {
       // Execute the user closure
       per_file(path);
@@ -393,7 +393,7 @@ impl FileAggregateDateSet {
    /// directories encountered.  The file data is
    /// not sorted in this function.
    fn internal_search_dir_recursive_unsorted<F>(
-      file_set_buffer   : & mut Vec<FileDateSet>,
+      file_set_buffer   : & mut Vec<FileDateList>,
       path              : std::path::PathBuf,
       per_file          : F,
    ) -> Result<()>
@@ -405,7 +405,7 @@ impl FileAggregateDateSet {
             // If the data list contains dates, sort the dates
             // and add them and the path to the buffer
             if date_set.is_empty() == false {
-               file_set_buffer.push(FileDateSet::from(
+               file_set_buffer.push(FileDateList::from(
                   path,
                   date_set,
                ));
@@ -451,11 +451,11 @@ impl FileAggregateDateSet {
    }
 }
 
-////////////////////////////////////
-// Methods - FileAggregateDateSet //
-////////////////////////////////////
+/////////////////////////////////////
+// Methods - FileAggregateDateList //
+/////////////////////////////////////
 
-impl FileAggregateDateSet {
+impl FileAggregateDateList {
    /// Recursively searches a file or directory
    /// for dating information and stores them in
    /// a sorted set with no duplicates and no
@@ -510,12 +510,12 @@ impl FileAggregateDateSet {
    }
 
    /// Accesses the underlying data as
-   /// a FileDateSet slice.  This is
+   /// a FileDateList slice.  This is
    /// equivalent to the Deref trait
    /// which is implemented.
    pub fn as_slice<'l>(
       &'l self,
-   ) -> &'l [FileDateSet] {
+   ) -> &'l [FileDateList] {
       return &self.files;
    }
 
@@ -523,8 +523,8 @@ impl FileAggregateDateSet {
    /// date sets.
    pub fn iter<'l>(
       &'l self,
-   ) -> FileAggregateDateSetIterator<'l> {
-      return FileAggregateDateSetIterator::new(self);
+   ) -> FileAggregateDateListIterator<'l> {
+      return FileAggregateDateListIterator::new(self);
    }
 
    /// Creates a FileAggregateReport from
@@ -536,12 +536,12 @@ impl FileAggregateDateSet {
    }
 }
 
-//////////////////////////////////////////////////
-// Trait implementations - FileAggregateDateSet //
-//////////////////////////////////////////////////
+///////////////////////////////////////////////////
+// Trait implementations - FileAggregateDateList //
+///////////////////////////////////////////////////
 
-impl std::ops::Deref for FileAggregateDateSet {
-   type Target = [FileDateSet];
+impl std::ops::Deref for FileAggregateDateList {
+   type Target = [FileDateList];
 
    fn deref(
       & self,
@@ -550,15 +550,15 @@ impl std::ops::Deref for FileAggregateDateSet {
    }
 }
 
-////////////////////////////////////////////
-// Methods - FileAggregateDateSetIterator //
-////////////////////////////////////////////
+/////////////////////////////////////////////
+// Methods - FileAggregateDateListIterator //
+/////////////////////////////////////////////
 
-impl<'l> FileAggregateDateSetIterator<'l> {
+impl<'l> FileAggregateDateListIterator<'l> {
    /// Creates a new iterator from an
-   /// existing FileAggregateDateSet.
+   /// existing FileAggregateDateList.
    pub fn new(
-      data : &'l FileAggregateDateSet,
+      data : &'l FileAggregateDateList,
    ) -> Self {
       return Self{
          data  : data,
@@ -567,12 +567,12 @@ impl<'l> FileAggregateDateSetIterator<'l> {
    }
 }
 
-//////////////////////////////////////////////////////////
-// Trait implementations - FileAggregateDateSetIterator //
-//////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////
+// Trait implementations - FileAggregateDateListIterator //
+///////////////////////////////////////////////////////////
 
-impl<'l> std::iter::Iterator for FileAggregateDateSetIterator<'l> {
-   type Item = &'l FileDateSet;
+impl<'l> std::iter::Iterator for FileAggregateDateListIterator<'l> {
+   type Item = &'l FileDateList;
 
    fn next(
       & mut self,

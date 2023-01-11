@@ -1,4 +1,4 @@
-# Dacom (Date Conpiler)
+# Dacom (Date Compiler)
 A tool for searching for dates in files and performing a statistical analysis of the data.
 
 ### Quick Start

@@ -1,4 +1,16 @@
 //! Utilities for aggregating and analyzing data.
+//!
+//! The idea is to store a sorted list of dates
+//! along with a file path inside a sorted array
+//! and collect the results into a struct.
+//! A FileAggregateDateList is the struct which
+//! stores all these results, and its creation
+//! methods should be used to create file dating
+//! information.  The file aggregate struct is
+//! a list of FileDateList elements, which contain
+//! a file path and a list of dates.  These dates
+//! are stored in a DateList struct, which stores
+//! a sorted list of dates.
 
 /////////////////////////////////
 // Struct and enum definitions //

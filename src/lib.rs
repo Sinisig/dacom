@@ -1,4 +1,8 @@
-//! Crate library root.
+//! Dacom (Date Compiler) - Utility for searching for dates in files and analyzing the results
+//!
+//! Library crate root.  All the functionality
+//! implemented in the binary crate is contained
+//! in this crate.
 
 // Public interfaces
 pub mod args;

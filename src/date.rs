@@ -366,7 +366,7 @@ impl std::cmp::PartialOrd for Date {
 
 impl std::cmp::Ord for Date {
    fn cmp(&self, other : & Self) -> std::cmp::Ordering {
-      use std::cmp::Ordering::*;
+      use std::cmp::Ordering::*; 
 
       return self.partial_cmp(other).unwrap_or_else(|| Equal);
    }

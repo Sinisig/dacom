@@ -214,6 +214,11 @@ impl std::cmp::Ord for DateList {
    ) -> std::cmp::Ordering {
       use std::cmp::Ordering::*;
 
+      // Ordering for zero-length lists
+      if self.list.is_empty() || other.list.is_empty() {
+         return self.list.len().cmp(&other.list.len());
+      }
+
       return self.partial_cmp(other).unwrap_or_else(|| Equal);
    }
 }

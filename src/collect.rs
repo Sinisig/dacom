@@ -214,18 +214,7 @@ impl std::cmp::Ord for DateList {
    ) -> std::cmp::Ordering {
       use std::cmp::Ordering::*;
 
-      // Safety check if one or both have length 0
-      if self.is_empty() && other.is_empty() {
-         return Equal;
-      }
-      if self.is_empty() && !other.is_empty() {
-         return Less;
-      }
-      if !self.is_empty() && other.is_empty() {
-         return Greater;
-      }
-
-      return self.partial_cmp(other).unwrap();
+      return self.partial_cmp(other).unwrap_or_else(|| Equal);
    }
 }
 
@@ -336,7 +325,9 @@ impl std::cmp::Ord for FileDateList {
       & self,
       other : & Self,
    ) -> std::cmp::Ordering {
-      return self.partial_cmp(other).unwrap();
+      use std::cmp::Ordering::*;
+
+      return self.partial_cmp(other).unwrap_or_else(|| Equal);
    }
 }
 

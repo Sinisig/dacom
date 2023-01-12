@@ -93,13 +93,13 @@ impl<'l> std::fmt::Display for FileAggregateReport<'l> {
       write!(stream, "--------- Data Summary ----------\n\n")?;
 
       write!(stream, "Oldest file:\n")?;
-      write!(stream, "   {}\n", self.oldest.path().to_str().unwrap())?;
+      write!(stream, "   {}\n", self.oldest.path().to_str().unwrap_or_else(|| "???"))?;
       for date in self.oldest.dates().iter() {
          write!(stream, "   {date}\n")?;
       }
 
       write!(stream, "\nNewest file:\n")?;
-      write!(stream, "   {}\n", self.newest.path().to_str().unwrap())?;
+      write!(stream, "   {}\n", self.newest.path().to_str().unwrap_or_else(|| "???"))?;
       for date in self.newest.dates().iter() {
          write!(stream, "   {date}\n")?;
       }
@@ -107,7 +107,7 @@ impl<'l> std::fmt::Display for FileAggregateReport<'l> {
       write!(stream, "\n----------- Raw Data ------------\n\n")?;
 
       for file in self.raw_data.iter() {
-         write!(stream, "{}\n", file.path().to_str().unwrap())?;
+         write!(stream, "{}\n", file.path().to_str().unwrap_or_else(|| "???"))?;
          for date in file.dates().iter() {
             write!(stream, "   {date}\n")?;
          }

@@ -11,7 +11,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
       &args.input_file(),
       if args.verbose() {
          |path : & std::path::Path| {
-            println!("Searching {}...", path.to_str().unwrap());
+            println!("Searching {}...", path.to_str().unwrap_or_else(|| "???"));
          }
       } else {
          |_ : & std::path::Path| {}

@@ -538,7 +538,7 @@ impl FileAggregateDateList {
    /// the data.
    pub fn create_report<'l>(
       &'l self,
-   ) -> crate::report::FileAggregateReport<'l> {
+   ) -> crate::report::Result<crate::report::FileAggregateReport<'l>> {
       return crate::report::FileAggregateReport::from(self);
    }
 }

@@ -4,6 +4,19 @@
 // Struct and enum definitions //
 /////////////////////////////////
 
+/// An error type representing an error
+/// relating to a data report.
+#[derive(Copy, Clone, Debug)]
+pub enum ReportError {
+   NoData,
+   InvalidData,
+}
+
+/// A type alias for the standard library
+/// result type with an error variant of
+/// ReportError.
+pub type Result<T> = std::result::Result<T, ReportError>;
+
 /// Struct for containing the results
 /// of statistically analyzing a collection
 /// of files dates.
@@ -13,6 +26,27 @@ pub struct FileAggregateReport<'l> {
    newest   : &'l crate::collect::FileDateList,
 }
 
+/////////////////////////////////////////
+// Trait implementations - ReportError //
+/////////////////////////////////////////
+
+impl std::error::Error for ReportError {
+}
+
+impl std::fmt::Display for ReportError {
+   fn fmt(
+      & self,
+      stream : & mut std::fmt::Formatter<'_>,
+   ) -> std::fmt::Result {
+      return write!(stream, "{}", match self {
+         Self::NoData
+            => "No input data",
+         Self::InvalidData
+            => "Invalid input data",
+      });
+   }
+}
+
 ///////////////////////////////////
 // Methods - FileAggregateReport //
 ///////////////////////////////////
@@ -20,18 +54,30 @@ pub struct FileAggregateReport<'l> {
 impl<'l> FileAggregateReport<'l> {
    /// Creates a new statistical report
    /// from an existing file aggregate date
-   /// set.
+   /// set.  If a report cannot be formed
+   /// from the data, an error is returned.
    pub fn from(
       file_data   : &'l crate::collect::FileAggregateDateList,
-   ) -> Self {
-      let oldest = &file_data.as_slice().first().unwrap();
-      let newest = &file_data.as_slice().last().unwrap();
+   ) -> Result<Self> {
+      // Get statistical variables
+      let oldest = match file_data.as_slice().first() {
+         Some(fd) => fd,
+         None     => return Err(ReportError::NoData),
+      };
+      let newest = match file_data.as_slice().last() {
+         Some(fd) => fd,
+         None     => return Err(ReportError::NoData),
+      };
 
-      return Self{
+      // Create struct instance
+      let report = Self{
          raw_data : file_data,
          oldest   : oldest,
          newest   : newest,
       };
+
+      // Return success
+      return Ok(report);
    }
 }
 

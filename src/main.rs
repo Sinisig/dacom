@@ -22,7 +22,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
    if args.verbose() {println!(
       "Analyzing found dates and creating a report...",
    )};
-   let data = data.create_report();
+   let data = data.create_report()?;
 
    // Send the data to the appropriate file stream
    if let Some(path) = &args.output_file() {

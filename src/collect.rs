@@ -135,12 +135,12 @@ impl std::convert::From<std::io::Error> for CollectDateError {
 
 impl DateList {
    /// Creates a new DateList from
-   /// an unsorted Vec.
+   /// an existing sorted list.
    pub fn from(
-      data : Vec<crate::date::Date>,
+      list : sorted_vec::SortedVec<crate::date::Date>,
    ) -> Self {
       return Self{
-         list  : sorted_vec::SortedVec::from_unsorted(data),
+         list  : list,
       };
    }
 
@@ -352,7 +352,7 @@ impl FileAggregateDateList {
       text  : & str,
    ) -> DateList {
       // Get an unsorted list of dates
-      let dates = crate::date::Date::from_text_multi(text);
+      let dates = crate::date::Date::from_text_multi_sorted(text);
 
       // Sort and remove duplicates
       let dates = DateList::from(dates);

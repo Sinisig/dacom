@@ -3,6 +3,7 @@
 #[test]
 fn methods() {
    use std::path::PathBuf;
+   use sorted_vec::SortedVec;
    use crate::{
       date::{
          Date,
@@ -18,10 +19,10 @@ fn methods() {
    path.push("launch_codes");
    path.push(".txt");
 
-   let dates = vec![
+   let dates = SortedVec::from_unsorted(vec![
       Date::new(01, January,  2000).unwrap(),
       Date::new(24, December, 1995).unwrap(),
-   ];
+   ]);
 
    let f0 = FileDateList::from(
       path.clone(),
@@ -40,6 +41,7 @@ fn trait_std_cmp_ord() {
       cmp::Ordering::*,
       path::PathBuf,
    };
+   use sorted_vec::SortedVec;
    use crate::{
       date::{
          Date,
@@ -71,54 +73,54 @@ fn trait_std_cmp_ord() {
 
    let f0 = FileDateList::from(
       p0,
-      DateList::from(vec![
+      DateList::from(SortedVec::from_unsorted(vec![
          Date::new(01, January,  2000).unwrap(),
          Date::new(05, January,  2004).unwrap(),
-      ]),
+      ])),
    );
    let f1 = FileDateList::from(
       p1,
-      DateList::from(vec![
+      DateList::from(SortedVec::from_unsorted(vec![
          Date::new(01, January,  2000).unwrap(),
          Date::new(05, January,  2004).unwrap(),
-      ]),
+      ])),
    );
    let f2 = FileDateList::from(
       p2,
-      DateList::from(vec![
+      DateList::from(SortedVec::from_unsorted(vec![
          Date::new(02, January,  2000).unwrap(),
          Date::new(21, March,    2002).unwrap(),
          Date::new(05, January,  2004).unwrap(),
-      ]),
+      ])),
    );
    let f3 = FileDateList::from(
       p3,
-      DateList::from(vec![
+      DateList::from(SortedVec::from_unsorted(vec![
          Date::new(01, January,  2000).unwrap(),
          Date::new(05, April,    2004).unwrap(),
-      ]),
+      ])),
    );
    let f4 = FileDateList::from(
       p4,
-      DateList::from(vec![
+      DateList::from(SortedVec::from_unsorted(vec![
          Date::new(29, December, 1999).unwrap(),
          Date::new(05, January,  2004).unwrap(),
-      ]),
+      ])),
    );
    let f5 = FileDateList::from(
       p5,
-      DateList::from(vec![
+      DateList::from(SortedVec::from_unsorted(vec![
          Date::new(01, January,  2000).unwrap(),
          Date::new(30, January,  2001).unwrap(),
-      ]),
+      ])),
    );
    let f6 = FileDateList::from(
       p6,
-      DateList::from(Vec::new()),
+      DateList::from(SortedVec::new()),
    );
    let f7 = FileDateList::from(
       p7,
-      DateList::from(Vec::new()),
+      DateList::from(SortedVec::new()),
    );
 
    assert!(f0.cmp(&f0) == Equal  );

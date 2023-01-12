@@ -119,31 +119,7 @@ fn from_text_single() {
 }
 
 #[test]
-fn from_text_multi() {
-   use crate::date::{Date, Month::*};
-
-   let s00 = r"
-      This is some random unrelated text!
-      Creation date: December 20th, 2022
-      Revision date: January   7th, 2023
-      This is some more random unrelated text!
-      Blah blah blah...
-      My birthday:   nov. 28, 2003
-   ";
-   
-   let r00 = vec![
-      Date::new(20, December, 2022).unwrap(),
-      Date::new( 7, January,  2023).unwrap(),
-      Date::new(28, November, 2003).unwrap(),
-   ];
-
-   assert!(Date::from_text_multi(s00) == r00);
-
-   return;
-}
-
-#[test]
-fn from_text_multi_sorted_by() {
+fn from_text_multi_sorted() {
    use crate::date::{Date, Month::*};
 
    let s00 = r"
@@ -161,11 +137,10 @@ fn from_text_multi_sorted_by() {
       Date::new( 7, January,  2023).unwrap(),
    ];
 
-   assert!(Date::from_text_multi_sorted_by(s00, |a, b| a.cmp(b)) == r00);
+   assert!(Date::from_text_multi_sorted(s00).as_slice() == r00.as_slice());
 
    return;
 }
-
 #[test]
 fn trait_std_cmp_partialeq() {
    use crate::date::{Date, Month::*};

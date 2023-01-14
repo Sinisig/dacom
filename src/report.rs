@@ -24,6 +24,7 @@ pub struct FileAggregateReport<'l> {
    raw_data : &'l crate::collect::FileAggregateDateList,
    oldest   : &'l crate::collect::FileDateList,
    newest   : &'l crate::collect::FileDateList,
+   median   : &'l crate::collect::FileDateList,
 }
 
 /////////////////////////////////////////
@@ -60,11 +61,15 @@ impl<'l> FileAggregateReport<'l> {
       file_data   : &'l crate::collect::FileAggregateDateList,
    ) -> Result<Self> {
       // Get statistical variables
-      let oldest = match file_data.as_slice().first() {
+      let oldest = match file_data.first() {
          Some(fd) => fd,
          None     => return Err(ReportError::NoData),
       };
-      let newest = match file_data.as_slice().last() {
+      let newest = match file_data.last() {
+         Some(fd) => fd,
+         None     => return Err(ReportError::NoData),
+      };
+      let median = match file_data.get(file_data.len() / 2) {
          Some(fd) => fd,
          None     => return Err(ReportError::NoData),
       };
@@ -74,6 +79,7 @@ impl<'l> FileAggregateReport<'l> {
          raw_data : file_data,
          oldest   : oldest,
          newest   : newest,
+         median   : median,
       };
 
       // Return success
@@ -93,21 +99,27 @@ impl<'l> std::fmt::Display for FileAggregateReport<'l> {
       write!(stream, "--------- Data Summary ----------\n\n")?;
 
       write!(stream, "Oldest file:\n")?;
-      write!(stream, "   {}\n", self.oldest.path().to_str().unwrap_or_else(|| "???"))?;
+      write!(stream, "   {}\n", self.oldest.path().to_str().unwrap_or("???"))?;
       for date in self.oldest.dates().iter() {
          write!(stream, "   {date}\n")?;
       }
 
       write!(stream, "\nNewest file:\n")?;
-      write!(stream, "   {}\n", self.newest.path().to_str().unwrap_or_else(|| "???"))?;
+      write!(stream, "   {}\n", self.newest.path().to_str().unwrap_or("???"))?;
       for date in self.newest.dates().iter() {
+         write!(stream, "   {date}\n")?;
+      }
+
+      write!(stream, "\nMedian file:\n")?;
+      write!(stream, "   {}\n", self.median.path().to_str().unwrap_or("???"))?;
+      for date in self.median.dates().iter() {
          write!(stream, "   {date}\n")?;
       }
 
       write!(stream, "\n----------- Raw Data ------------\n\n")?;
 
       for file in self.raw_data.iter() {
-         write!(stream, "{}\n", file.path().to_str().unwrap_or_else(|| "???"))?;
+         write!(stream, "{}\n", file.path().to_str().unwrap_or("???"))?;
          for date in file.dates().iter() {
             write!(stream, "   {date}\n")?;
          }

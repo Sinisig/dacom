@@ -219,7 +219,7 @@ impl std::cmp::Ord for DateList {
          return self.list.len().cmp(&other.list.len());
       }
 
-      return self.partial_cmp(other).unwrap_or_else(|| Equal);
+      return self.partial_cmp(other).unwrap_or(Equal);
    }
 }
 
@@ -332,7 +332,7 @@ impl std::cmp::Ord for FileDateList {
    ) -> std::cmp::Ordering {
       use std::cmp::Ordering::*;
 
-      return self.partial_cmp(other).unwrap_or_else(|| Equal);
+      return self.partial_cmp(other).unwrap_or(Equal);
    }
 }
 

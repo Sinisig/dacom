@@ -63,8 +63,8 @@ impl Args {
    /// Retrieves the outfile file string.
    pub fn output_file<'a>(
       &'a self,
-   ) -> &'a Option<String> {
-      return &self.output_file;
+   ) -> Option<&'a str> {
+      return self.output_file.as_ref().map(|s| s.as_str());
    }
 
    /// Retrieves whether to print verbosely

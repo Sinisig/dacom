@@ -5,10 +5,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
    // Collect dates from files
    if args.verbose() {println!(
       "Starting search for and collection of dates starting at {}...",
-      &args.input_file(),
+      args.input_file(),
    )};
    let data = dacom::FileAggregateDateList::new_recursive_with(
-      &args.input_file(),
+      args.input_file(),
       if args.verbose() {
          |path : & std::path::Path| {
             println!("Searching {}...", path.to_str().unwrap_or("???"));
@@ -25,7 +25,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
    let data = data.create_report()?;
 
    // Send the data to the appropriate file stream
-   if let Some(path) = &args.output_file() {
+   if let Some(path) = args.output_file() {
       if args.verbose() {println!(
          "Writing results to {path}...",
       )};

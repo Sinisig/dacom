@@ -35,6 +35,15 @@ pub struct Args {
       required       = false,
    )]
    verbose     : bool,
+
+   #[arg(
+      short          = 't',
+      long           = "threads",
+      help           = "Amount of threads to use when searching a directory for dates within files",
+      required       = false,
+      default_value  = "1",
+   )]
+   threads     : std::num::NonZeroUsize,
 }
 
 ////////////////////
@@ -73,6 +82,13 @@ impl Args {
       & self,
    ) -> bool {
       return self.verbose;
+   }
+
+   /// Retrieves the specified thread count.
+   pub fn threads(
+      & self,
+   ) -> std::num::NonZeroUsize {
+      return self.threads.clone();
    }
 }
 

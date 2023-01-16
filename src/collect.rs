@@ -82,6 +82,18 @@ pub struct FileAggregateDateListIterator<'l> {
    index : usize,
 }
 
+/// A pool of spawned threads purposed for
+/// finding all dates in a given string.
+/// Useful for multi-threading the collection
+/// of dates from multiple files.  The threads
+/// for a given instance will exit when the
+/// instance goes out of scope.
+pub struct DateFinderThreadPool {
+   pipe_send_list    : Vec<std::sync::mpsc::Sender<std::path::PathBuf>>,
+   pipe_recv         : std::sync::mpsc::Receiver<Result<FileDateList>>,
+   thread_send_next  : usize,
+}
+
 //////////////////////////////////////////////
 // Trait implementations - CollectDateError //
 //////////////////////////////////////////////
@@ -275,6 +287,48 @@ impl FileDateList {
       };
    }
    
+   /// Creates a new FileDateList from
+   /// a path buffer and reads the file
+   /// at the location, constructing a
+   /// new DateList.
+   pub fn from_file(
+      path  : std::path::PathBuf,
+   ) -> Result<Self> {
+      // Check if the file is a directory
+      if match std::fs::metadata(&path) {
+         Ok(md)   => md,
+         Err(e)   => return Err(e.into()),
+      }.is_dir() == true {
+         return Err(CollectDateError::FileIsDirectory);
+      }
+
+      // Map the file into memory as a string slice
+      let file = match std::fs::File::open(&path) {
+         Ok(f)    => f,
+         Err(e)   => return Err(e.into()),
+      };
+      let file = match unsafe{memmap2::Mmap::map(&file)} {
+         Ok(m)    => m,
+         Err(e)   => return Err(e.into()),
+      };
+      let file = match std::str::from_utf8(&file) {
+         Ok(d)    => d,
+         Err(_)   => return Err(CollectDateError::InvalidData),
+      };
+
+      // Find all dates within the file
+      let dates = crate::date::Date::from_text_multi_sorted(file);
+      
+      // Construct a DateList struct
+      let dates = DateList::from(dates);
+
+      // Return success
+      return Ok(Self{
+         path  : path,
+         dates : dates,
+      });
+   }
+
    /// Get a reference to the file's
    /// path.
    pub fn path<'l>(
@@ -341,121 +395,49 @@ impl std::cmp::Ord for FileDateList {
 //////////////////////////////////////////////
 
 impl FileAggregateDateList {
-   /// Searches an input text stream for
-   /// dates and return a DateList containing
-   /// the found dates.
-   fn internal_collect_dates(
-      text  : & str,
-   ) -> DateList {
-      // Get an unsorted list of dates
-      let dates = crate::date::Date::from_text_multi_sorted(text);
-
-      // Sort and remove duplicates
-      let dates = DateList::from(dates);
-
-      // Return success
-      return dates;
-   }
-
-   /// Searches a single file for dates and returns
-   /// a DateList containing all the found dates.
-   fn internal_search_file_single<F>(
-      path     : & std::path::Path,
-      per_file : F,
-   ) -> Result<DateList>
-   where F: Fn(& std::path::Path) {
-      // Execute the user closure
-      per_file(path);
-
-      // Check if the file is a directory
-      if match std::fs::metadata(path) {
-         Ok(md)   => md,
-         Err(e)   => return Err(e.into()),
-      }.is_dir() == true {
-         return Err(CollectDateError::FileIsDirectory);
-      }
-
-      // Map the file into memory as a string slice
-      let file = match std::fs::File::open(path) {
-         Ok(f)    => f,
-         Err(e)   => return Err(e.into()),
-      };
-      let file = match unsafe{memmap2::Mmap::map(&file)} {
-         Ok(m)    => m,
-         Err(e)   => return Err(e.into()),
-      };
-      let file = match std::str::from_utf8(&file) {
-         Ok(d)    => d,
-         Err(_)   => return Err(CollectDateError::InvalidData),
-      };
-
-      // Search for dates within the file
-      let list = Self::internal_collect_dates(&file);
-
-      // Return success
-      return Ok(list);
-   }
-
    /// Searches a file path for dates in a file,
    /// searching all files recursively in any
-   /// directories encountered.  The file data is
-   /// not sorted in this function.
-   fn internal_search_dir_recursive_unsorted<F>(
-      file_list_buffer  : & mut sorted_vec::SortedVec<FileDateList>,
-      path              : std::path::PathBuf,
-      per_file          : F,
-   ) -> Result<()>
+   /// directories encountered, running a closure
+   /// for each file that will be searched.  Upon
+   /// success, the number of files searched is
+   /// returned.
+   fn internal_search_dir_recursive<F>(
+      thread_pool             : & mut DateFinderThreadPool,
+      path                    : std::path::PathBuf,
+      mut current_file_count  : usize,
+      per_file                : F,
+   ) -> Result<usize>
    where F: Fn(& std::path::Path) + Copy {
-      // Try to parse the file path, if it errors as a directory, recursively
-      // search that directory
-      match Self::internal_search_file_single(&path, per_file) {
-         Ok(date_set)  => {
-            // If the data list contains dates, sort the dates
-            // and add them and the path to the buffer
-            if date_set.is_empty() == false {
-               file_list_buffer.push(FileDateList::from(
-                  path,
-                  date_set,
-               ));
-            }
-         },
-         Err(err)       => {
-            // If it's a directory, do nothing
-            // If it's binary data, exit early
-            // Otherwise return the error
-            match err {
-               CollectDateError::FileIsDirectory
-                  => (),
-               CollectDateError::InvalidData
-                  => return Ok(()),
-               _
-                  => return Err(err),
-            }
+      // Check if the input file is a directory
+      if match std::fs::metadata(&path) {
+         Ok(md)   => md,
+         Err(e)   => return Err(e.into()),
+      }.is_dir() {
+         // Iterate for every element in the directory
+         for path in std::fs::read_dir(&path)? {
+            let path = path?.path();
 
-            // Iterate for every file in the directory and try to parse it
-            for file in match std::fs::read_dir(&path) {
-               Ok(iter) => iter,
-               Err(err) => return Err(err.into()),
-            } {
-               // Unwrap the file result, erroring if we get a
-               // file I/O error
-               let file = match file {
-                  Ok(f)    => f,
-                  Err(e)   => return Err(e.into()),
-               };
+            // Search this file
+            current_file_count = Self::internal_search_dir_recursive(
+               thread_pool,
+               path,
+               current_file_count,
+               per_file.clone(),
+            )?;
+         }
+      } else {
+         // Execute the user closure
+         per_file(&path);
 
-               // Try to parse the new file/directory
-               Self::internal_search_dir_recursive_unsorted(
-                  file_list_buffer,
-                  file.path(),
-                  per_file,
-               )?;
-            }
-         },
+         // Send the path to the thread pool to be parsed
+         thread_pool.send(path);
+
+         // Increment the file count
+         current_file_count += 1;
       }
 
       // Return success
-      return Ok(());
+      return Ok(current_file_count);
    }
 }
 
@@ -469,11 +451,13 @@ impl FileAggregateDateList {
    /// a sorted set with no duplicates and no
    /// files with zero found dates.
    pub fn new_recursive<P>(
-      path  : P,
+      thread_pool : & mut DateFinderThreadPool,
+      path        : P,
    ) -> Result<Self>
    where P: AsRef<std::path::Path> {
       // Closure does nothing
       return Self::new_recursive_with(
+         thread_pool,
          path,
          |_| {},
       );
@@ -484,8 +468,9 @@ impl FileAggregateDateList {
    /// that is searched.  The closure is passed the
    /// path to the current file.
    pub fn new_recursive_with<P, F>(
-      path     : P,
-      per_file : F,
+      thread_pool : & mut DateFinderThreadPool,
+      path        : P,
+      per_file    : F,
    ) -> Result<Self>
    where P: AsRef<std::path::Path>,
          F: Fn(& std::path::Path) + Copy {
@@ -496,12 +481,45 @@ impl FileAggregateDateList {
       // Create the buffer for holding file date lists
       let mut file_list_buffer = sorted_vec::SortedVec::new();
 
-      // Populate the buffer with file into
-      Self::internal_search_dir_recursive_unsorted(
-         & mut file_list_buffer,
+      // Assign file paths to the thread pool
+      let mut expected_file_count = Self::internal_search_dir_recursive(
+         thread_pool,
          path_buf,
+         0,
          per_file,
       )?;
+
+      // Start populating the file list buffer with results
+      while file_list_buffer.len() < expected_file_count {
+         let file_dates = match thread_pool.recv() {
+            Some(fd) => fd,
+            None     => continue,
+         };
+
+         // Unwrap error variant
+         let file_dates = match file_dates {
+            Ok(fd)   => fd,
+            Err(e)   => match e {
+               CollectDateError::InvalidData
+                  => {
+                     expected_file_count -= 1;
+                     continue;
+                  },
+               _
+                  => return Err(e),
+            },
+         };
+
+         // If the date list is empty, nix this file
+         // from the data
+         if file_dates.dates().is_empty() {
+            expected_file_count -= 1;
+            continue;
+         }
+
+         // Add the file dating to the list
+         file_list_buffer.push(file_dates);
+      }
 
       // Create the struct
       let aggregate = Self{
@@ -584,6 +602,89 @@ impl<'l> std::iter::Iterator for FileAggregateDateListIterator<'l> {
 
       self.index += 1;
       return item;
+   }
+}
+
+////////////////////////////////////
+// Methods - DateFinderThreadPool //
+////////////////////////////////////
+
+impl DateFinderThreadPool {
+   /// Creates a new thread pool with the
+   /// given number of threads.
+   pub fn new(
+      thread_count   : std::num::NonZeroUsize,
+   ) -> Self {
+      // Initialize pipes
+      let mut pipe_in_send_list = Vec::new();
+      let (
+         pipe_out_send,
+         pipe_out_recv,
+      ) = std::sync::mpsc::channel();
+
+      // Creates threads and pipes for each thread
+      for _ in 0..thread_count.get() {
+         let (
+            pipe_in_send,
+            pipe_in_recv,
+         ) = std::sync::mpsc::channel();
+         let pipe_out_send = pipe_out_send.clone();
+
+         pipe_in_send_list.push(pipe_in_send);
+         std::thread::spawn(move || {
+            let recv = pipe_in_recv;
+            let send = pipe_out_send;
+
+            while let Ok(path) = recv.recv() {
+               send.send(FileDateList::from_file(path)).unwrap();
+            }
+
+            return;
+         });
+      }
+
+      // Return a new struct instance with the pipes
+      return Self{
+         pipe_send_list    : pipe_in_send_list,
+         pipe_recv         : pipe_out_recv,
+         thread_send_next  : 0,
+      };
+   }
+
+   /// Send a PathBuf to a file to be searched
+   /// for dates.
+   pub fn send(
+      & mut self,
+      path  : std::path::PathBuf,
+   ) -> & mut Self {
+      self.pipe_send_list[self.thread_send_next].send(path).unwrap();
+
+      self.thread_send_next =
+         (self.thread_send_next + 1) % self.pipe_send_list.len();
+      return self;
+   }
+
+   /// Receives a DateList created from a file.
+   /// If there are currently no avaliable dates,
+   /// None is returned.  It is recommended to keep
+   /// a counter of how many files were sent and to
+   /// keep requesting data until the requested data
+   /// count matches the sent file count.  Otherwise,
+   /// dates may be missed.
+   pub fn recv(
+      & mut self,
+   ) -> Option<Result<FileDateList>> {
+      use std::sync::mpsc::TryRecvError;
+
+      return match self.pipe_recv.try_recv() {
+         Ok(d)    => Some(d),
+         Err(e)   => match e {
+            TryRecvError::Empty
+               => None,
+            TryRecvError::Disconnected
+               => panic!("Attempted to receive data from broken pipe"),
+         },
+      }
    }
 }
 

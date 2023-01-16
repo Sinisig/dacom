@@ -13,6 +13,7 @@ pub mod report;
 // Re-exports
 pub use args::Args;
 pub use collect::CollectDateError;
+pub use collect::DateFinderThreadPool;
 pub use collect::DateList;
 pub use collect::FileDateList;
 pub use collect::FileAggregateDateList;

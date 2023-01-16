@@ -295,22 +295,13 @@ impl FileDateList {
       path  : std::path::PathBuf,
    ) -> Result<Self> {
       // Check if the file is a directory
-      if match std::fs::metadata(&path) {
-         Ok(md)   => md,
-         Err(e)   => return Err(e.into()),
-      }.is_dir() == true {
+      if std::fs::metadata(&path)? == true {
          return Err(CollectDateError::FileIsDirectory);
       }
 
       // Map the file into memory as a string slice
-      let file = match std::fs::File::open(&path) {
-         Ok(f)    => f,
-         Err(e)   => return Err(e.into()),
-      };
-      let file = match unsafe{memmap2::Mmap::map(&file)} {
-         Ok(m)    => m,
-         Err(e)   => return Err(e.into()),
-      };
+      let file = std::fs::File::open(&path)?;
+      let file = unsafe{memmap2::Mmap::map(&file)}?;
       let file = match std::str::from_utf8(&file) {
          Ok(d)    => d,
          Err(_)   => return Err(CollectDateError::InvalidData),
@@ -409,10 +400,7 @@ impl FileAggregateDateList {
    ) -> Result<usize>
    where F: Fn(& std::path::Path) + Copy {
       // Check if the input file is a directory
-      if match std::fs::metadata(&path) {
-         Ok(md)   => md,
-         Err(e)   => return Err(e.into()),
-      }.is_dir() {
+      if std::fs::metadata(&path)?.is_dir() {
          // Iterate for every element in the directory
          for path in std::fs::read_dir(&path)? {
             let path = path?.path();

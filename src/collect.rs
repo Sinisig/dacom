@@ -295,7 +295,7 @@ impl FileDateList {
       path  : std::path::PathBuf,
    ) -> Result<Self> {
       // Check if the file is a directory
-      if std::fs::metadata(&path)? == true {
+      if std::fs::metadata(&path)?.is_dir() == true {
          return Err(CollectDateError::FileIsDirectory);
       }
 

@@ -2,12 +2,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
    // Parse command-line arguments
    let args = dacom::Args::new(std::env::args());
   
+   // Get thread count, defaulting to CPU core count
+   let thread_count = args.threads().unwrap_or(
+      std::thread::available_parallelism()?,
+   );
+
    // Create the thread pool
    if args.verbose() {println!(
       "Creating a thread pool with {} threads...",
-      args.threads(),
+      thread_count,
    )};
-   let mut thread_pool = dacom::DateFinderThreadPool::new(args.threads());
+   let mut thread_pool = dacom::DateFinderThreadPool::new(thread_count);
 
    // Collect dates from files
    if args.verbose() {println!(

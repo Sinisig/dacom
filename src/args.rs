@@ -41,9 +41,8 @@ pub struct Args {
       long           = "threads",
       help           = "Amount of threads to use when searching a directory for dates within files",
       required       = false,
-      default_value  = "1",
    )]
-   threads     : std::num::NonZeroUsize,
+   threads     : Option<std::num::NonZeroUsize>,
 }
 
 ////////////////////
@@ -87,7 +86,7 @@ impl Args {
    /// Retrieves the specified thread count.
    pub fn threads(
       & self,
-   ) -> std::num::NonZeroUsize {
+   ) -> Option<std::num::NonZeroUsize> {
       return self.threads.clone();
    }
 }

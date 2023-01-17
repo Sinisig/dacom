@@ -604,7 +604,7 @@ impl DateFinderThreadPool {
       thread_count   : std::num::NonZeroUsize,
    ) -> Self {
       // Initialize pipes
-      let mut pipe_in_send_list = Vec::new();
+      let mut pipe_in_send_list = Vec::with_capacity(thread_count.get());
       let (
          pipe_out_send,
          pipe_out_recv,
@@ -624,7 +624,9 @@ impl DateFinderThreadPool {
             let send = pipe_out_send;
 
             while let Ok(path) = recv.recv() {
-               send.send(FileDateList::from_file(path)).unwrap();
+               send.send(FileDateList::from_file(path)).expect(
+                  "Broken outgoing pipe",
+               );
             }
 
             return;
@@ -645,7 +647,9 @@ impl DateFinderThreadPool {
       & mut self,
       path  : std::path::PathBuf,
    ) -> & mut Self {
-      self.pipe_send_list[self.thread_send_next].send(path).unwrap();
+      self.pipe_send_list[self.thread_send_next].send(path).expect(
+         "Broken incoming pipe",
+      );
 
       self.thread_send_next =
          (self.thread_send_next + 1) % self.pipe_send_list.len();

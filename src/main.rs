@@ -17,13 +17,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
    let data = dacom::FileAggregateDateList::new_recursive_with(
       & mut thread_pool,
       args.input_file(),
-      if args.verbose() {
-         |path : & std::path::Path| {
-            println!("Searching {}...", path.to_str().unwrap_or("???"));
-         }
-      } else {
-         |_ : & std::path::Path| {}
-      },
+      |path| if args.verbose() {println!(
+         "Searching {}...",
+         path.to_str().unwrap_or("(???)"),
+      )},
    )?;
    
    // Create a data report

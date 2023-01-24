@@ -1,4 +1,19 @@
-fn main() -> Result<(), Box<dyn std::error::Error>> {
+fn main() {
+   use colored::Colorize;
+   const EXIT_FAILURE : i32 = 1;
+
+   if let Err(e) = dacom_main() {
+      println!("{} {}",
+         "Error:".red().bold(),
+         e.to_string()
+      );
+      std::process::exit(EXIT_FAILURE);
+   }
+
+   return;
+}
+
+fn dacom_main() -> Result<(), Box<dyn std::error::Error>> {
    // Parse command-line arguments
    let args = dacom::Args::new(std::env::args());
   

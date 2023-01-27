@@ -22,6 +22,17 @@ fn dacom_main() -> Result<(), Box<dyn std::error::Error>> {
       std::thread::available_parallelism()?,
    );
 
+   // Compile the input regex or use the default one
+   let regex = regex::Regex::new(args.date_regex().unwrap_or(r"(?x)
+      ###### Format #######
+      Month Day(th)(,) Year
+      #####################
+
+      (?P<m>[[:alpha:]])\.?\s*               # Month
+      (?P<d>\d{1,2})(?:st|nd|rd|th)?\s*,?\s* # Day
+      (?P<y>[+-]?\d+)                        # Year
+   "))?;
+
    // Create the thread pool
    if args.verbose() {println!(
       "Creating a thread pool with {} threads...",

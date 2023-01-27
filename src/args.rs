@@ -43,6 +43,14 @@ pub struct Args {
       required       = false,
    )]
    threads     : Option<std::num::NonZeroUsize>,
+
+   #[arg(
+      short          = 'e',
+      long           = "regexp",
+      help           = "A regular expression used to find dates.  Requires named capture groups $d, $m, and $y for day, month, and year respectively.",
+      required       = false,
+   )]
+   date_regex  : Option<String>,
 }
 
 ////////////////////
@@ -88,6 +96,13 @@ impl Args {
       & self,
    ) -> Option<std::num::NonZeroUsize> {
       return self.threads.clone();
+   }
+
+   /// Retrieves the input date regex.
+   pub fn date_regex<'l>(
+      &'l self,
+   ) -> Option<&'l str> {
+      return self.date_regex.as_ref().map(|s| s.as_str());
    }
 }
 

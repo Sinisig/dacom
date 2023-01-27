@@ -3,7 +3,7 @@ fn main() {
    const EXIT_FAILURE : i32 = 1;
 
    if let Err(e) = dacom_main() {
-      println!("{} {}",
+      eprintln!("{} {}",
          "Error:".red().bold(),
          e.to_string()
       );

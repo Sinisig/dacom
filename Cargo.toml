@@ -2,7 +2,7 @@
 name        = "dacom"
 description = "Date compilation tool which searches for dates within files and runs statistics on the data."
 authors     = ["Sinisig"]
-version     = "0.5.3+alpha"
+version     = "0.5.4+alpha"
 edition     = "2021"
 
 [dependencies]

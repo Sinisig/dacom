@@ -28,6 +28,9 @@ pub enum ParseDateError {
 
    /// The day of the month is not valid for the given month and year.
    InvalidDayOfMonth,
+
+   /// The given regex does not have M/D/Y captures.
+   InvalidRegexCaptures,
 }
 
 /// Enum for storing a month.
@@ -174,11 +177,18 @@ impl std::str::FromStr for Month {
 impl std::fmt::Display for ParseDateError {
    fn fmt(&self, stream : & mut std::fmt::Formatter<'_>) -> std::fmt::Result {
       return write!(stream, "{}", match self {
-         Self::InvalidFormatting       => "Text is not a date",
-         Self::InvalidDayFormatting    => "Day is not valid",
-         Self::InvalidMonthFormatting  => "Month is not valid",
-         Self::InvalidYearFormatting   => "Year is not valid",
-         Self::InvalidDayOfMonth       => "Invalid day of month",
+         Self::InvalidFormatting
+            => "Text is not a date",
+         Self::InvalidDayFormatting
+            => "Day is not valid",
+         Self::InvalidMonthFormatting
+            => "Month is not valid",
+         Self::InvalidYearFormatting
+            => "Year is not valid",
+         Self::InvalidDayOfMonth
+            => "Invalid day of month",
+         Self::InvalidRegexCaptures
+            => "Regex does not contain $m, $d, or $y capture groups",
       });
    }
 }
@@ -191,19 +201,19 @@ impl std::error::Error for ParseDateError {
 ////////////////////
 
 impl Date {
-   /// Parses text containing a single date string
-   /// into a Date struct.  If the text isn't a
-   /// single date adhering to the proper formatting,
-   /// an error is returned instead.
+   /// Attempts to parse a single date from
+   /// a text string using a pre-made regular
+   /// expression.  This regular expression
+   /// looks for dates using the format "
+   /// Month Day(th), Year".  See from_text_single_with
+   /// for further documentation.
    pub fn from_text_single(
       text  : & str,
    ) -> Result<Self, ParseDateError> {
-      use lazy_static::lazy_static;
       use regex::Regex;
 
-      lazy_static!{
-         // Month Day(th), Year
-         static ref RX_MONTH_DAY_YEAR  : Regex = Regex::new(r"(?x)
+      lazy_static::lazy_static!{
+         static ref RX_DEFAULT : Regex = Regex::new(r"(?x)
             ^                                      # Start of string
             (?P<m>[[:alpha:]]+)\.?\s*              # Month
             (?P<d>\d{1,2})(?:st|nd|rd|th)?\s*,?\s* # Day
@@ -212,25 +222,45 @@ impl Date {
          ").unwrap();
       }
 
+      return Self::from_text_single_with(
+         text, &RX_DEFAULT,
+      );
+   }
+
+   /// Searches for a single date within
+   /// a text string using a given regular
+   /// expression.  The regular expression
+   /// must be compiled first by the caller,
+   /// then can be passed by reference.  The
+   /// regular expression must contain three
+   /// named capture groups: $d, $m, and $y.
+   /// The day text is represented by $d.  The
+   /// month text is represented by $m.  The
+   /// year text is represented by $y.  If
+   /// the regular expression is missing one
+   /// or more of these named capture groups,
+   /// and error will be returned when the
+   /// regular expression successfully matches
+   /// a text string and begins to parse the
+   /// day, month, and year captures.
+   pub fn from_text_single_with(
+      text  : & str,
+      regex : & regex::Regex,
+   ) -> Result<Self, ParseDateError> {
+      use ParseDateError::*;
+
       // Attempt to run the regex parser and get the captures
-      let captures = match RX_MONTH_DAY_YEAR.captures(text) {
-         Some(cap)   => cap,
-         None        => return Err(ParseDateError::InvalidFormatting),
-      };
+      let captures = regex.captures(text).ok_or(InvalidFormatting)?;
+
+      // Get captures for month, day, and year
+      let day     = captures.name("d").ok_or(InvalidRegexCaptures)?.as_str();
+      let month   = captures.name("m").ok_or(InvalidRegexCaptures)?.as_str();
+      let year    = captures.name("y").ok_or(InvalidRegexCaptures)?.as_str();
 
       // Parse the found month, day, and year
-      let day = match captures["d"].parse() {
-         Ok(d)    => d,
-         Err(_)   => return Err(ParseDateError::InvalidDayFormatting),
-      };
-      let month = match captures["m"].parse() {
-         Ok(m)    => m,
-         Err(_)   => return Err(ParseDateError::InvalidMonthFormatting),
-      };
-      let year = match captures["y"].parse() {
-         Ok(y)    => y,
-         Err(_)   => return Err(ParseDateError::InvalidYearFormatting),
-      };
+      let day     = day    .parse().map_err(|_| InvalidDayFormatting   )?;
+      let month   = month  .parse().map_err(|_| InvalidMonthFormatting )?;
+      let year    = year   .parse().map_err(|_| InvalidYearFormatting  )?;
 
       // Attempt to create a new Date struct from the parsed information
       let date = Self::new(day, month, year)?;
@@ -242,35 +272,66 @@ impl Date {
    /// Searches an entire text string for matching
    /// dates and attempts to parse them into a Date
    /// struct, which is then stored inside of a
-   /// sorted vector from oldest to newest.
+   /// sorted vector from oldest to newest using
+   /// a pre-made regular expression.  The given
+   /// regular expression searches for dates in
+   /// Month Day(th), Year format.
    pub fn from_text_multi_sorted(
-      text     : & str,
+      text  : & str,
    ) -> sorted_vec::SortedVec<Self> {
-      use lazy_static::lazy_static;
       use regex::Regex;
-
-      // Regexes for parsing
-      lazy_static!{
-         // Month Day(th), Year
-         static ref RX_MONTH_DAY_YEAR  : Regex = Regex::new(r"(?x)
+      
+      lazy_static::lazy_static!{
+         static ref RX_DEFAULT : Regex = Regex::new(r"(?x)
             (?P<m>[[:alpha:]]+)\.?\s*              # Month
             (?P<d>\d{1,2})(?:st|nd|rd|th)?\s*,?\s* # Day
             (?P<y>[+-]?\d+)                        # Year
          ").unwrap();
       }
 
+      return Self::from_text_multi_sorted_with(
+         text, &RX_DEFAULT,
+      ).unwrap(); // If we return Err, the above regex is bugged
+   }
+
+   /// Searches an entire text string for dates
+   /// matching a given regular expression and
+   /// parses them into a Date struct which is
+   /// then sorted inside a sorted vector from
+   /// oldest to newest.  The regular expression
+   /// must contain three named capture groups:
+   /// $d, $m, and $y. The day text is represented
+   /// by $d.  The month text is represented by $m.
+   /// The year text is represented by $y.  If
+   /// the regular expression is missing one
+   /// or more of these named capture groups,
+   /// and error will be returned when the
+   /// regular expression successfully matches
+   /// a text string and begins to parse the
+   /// day, month, and year captures.
+   pub fn from_text_multi_sorted_with(
+      text  : & str,
+      regex : & regex::Regex,
+   ) -> Result<sorted_vec::SortedVec<Self>, ParseDateError> {
+      use ParseDateError::*;
+
       let mut dates = sorted_vec::SortedVec::new();
-      for cap in RX_MONTH_DAY_YEAR.captures_iter(text) {
+      for cap in regex.captures_iter(text) {
+         // Get string slices to captures
+         let day     = cap.name("d").ok_or(InvalidRegexCaptures)?.as_str();
+         let month   = cap.name("m").ok_or(InvalidRegexCaptures)?.as_str();
+         let year    = cap.name("y").ok_or(InvalidRegexCaptures)?.as_str();
+         
          // Parse matched text into day, month, year
-         let day = match cap["d"].parse() {
+         let day = match day.parse() {
             Ok(d)    => d,
             Err(_)   => continue,
          };
-         let month = match cap["m"].parse() {
+         let month = match month.parse() {
             Ok(m)    => m,
             Err(_)   => continue,
          };
-         let year = match cap["y"].parse() {
+         let year = match year.parse() {
             Ok(y)    => y,
             Err(_)   => continue,
          };
@@ -286,7 +347,7 @@ impl Date {
       }
 
       // Return successfully
-      return dates;
+      return Ok(dates);
    }
 
    /// Creates a new Date object.  Negative
@@ -354,7 +415,7 @@ impl std::cmp::PartialOrd for Date {
          return self.year  .partial_cmp(&other.year);
       };
       if self.month  != other.month {
-         return self.month.partial_cmp(&other.month);
+         return self.month .partial_cmp(&other.month);
       }
       if self.day    != other.day {
          return self.day   .partial_cmp(&other.day );

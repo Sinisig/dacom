@@ -24,11 +24,11 @@ fn dacom_main() -> Result<(), Box<dyn std::error::Error>> {
 
    // Compile the input regex or use the default one
    let regex = regex::Regex::new(args.date_regex().unwrap_or(r"(?x)
-      ###### Format #######
-      Month Day(th)(,) Year
-      #####################
+      ######## Format #########
+      # Month Day(th)(,) Year #
+      #########################
 
-      (?P<m>[[:alpha:]])\.?\s*               # Month
+      (?P<m>[[:alpha:]]+)\.?\s*              # Month
       (?P<d>\d{1,2})(?:st|nd|rd|th)?\s*,?\s* # Day
       (?P<y>[+-]?\d+)                        # Year
    "))?;

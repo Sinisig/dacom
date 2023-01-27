@@ -23,6 +23,9 @@ fn dacom_main() -> Result<(), Box<dyn std::error::Error>> {
    );
 
    // Compile the input regex or use the default one
+   if args.verbose() {if let Some(rx) = args.date_regex() {println!(
+      "Using regex \"{rx}\" to search for dates",
+   )}};
    let regex = regex::Regex::new(args.date_regex().unwrap_or(r"(?x)
       ######## Format #########
       # Month Day(th)(,) Year #

@@ -38,7 +38,9 @@ fn dacom_main() -> Result<(), Box<dyn std::error::Error>> {
       "Creating a thread pool with {} threads...",
       thread_count,
    )};
-   let mut thread_pool = dacom::DateFinderThreadPool::new(thread_count);
+   let mut thread_pool = dacom::DateFinderThreadPool::new(
+      thread_count, regex,
+   );
 
    // Collect dates from files
    if args.verbose() {println!(

@@ -42,6 +42,13 @@ pub enum CollectDateError {
    /// which expects text receives
    /// a file containing binary data.
    InvalidData,
+
+   /// A regular expression given to
+   /// a function contains invalid
+   /// captures.  See
+   /// crate::Date::ParseDateError::InvalidRegexCaptures
+   /// for more information.
+   InvalidRegexCaptures,
 }
 
 /// A type alias for a standard result
@@ -117,6 +124,8 @@ impl std::fmt::Display for CollectDateError {
             => "File is a directory",
          Self::InvalidData
             => "Invalid data",
+         Self::InvalidRegexCaptures
+            => "Regex does not contain $m, $d, or $y capture groups",
       });
    }
 }
@@ -290,9 +299,13 @@ impl FileDateList {
    /// Creates a new FileDateList from
    /// a path buffer and reads the file
    /// at the location, constructing a
-   /// new DateList.
-   pub fn from_file(
+   /// new DateList.  Dates are searched
+   /// for using a given regular expression.
+   /// See crate::Date for more information
+   /// about the format of the regular expression.
+   pub fn from_file_with(
       path  : std::path::PathBuf,
+      regex : & regex::Regex,
    ) -> Result<Self> {
       // Check if the file is a directory
       if std::fs::metadata(&path)?.is_dir() == true {
@@ -308,7 +321,9 @@ impl FileDateList {
       };
 
       // Find all dates within the file
-      let dates = crate::date::Date::from_text_multi_sorted(file);
+      let dates = crate::date::Date::from_text_multi_sorted_with(
+         file, regex,
+      ).map_err(|_| CollectDateError::InvalidRegexCaptures)?;
       
       // Construct a DateList struct
       let dates = DateList::from(dates);
@@ -599,9 +614,14 @@ impl<'l> std::iter::Iterator for FileAggregateDateListIterator<'l> {
 
 impl DateFinderThreadPool {
    /// Creates a new thread pool with the
-   /// given number of threads.
+   /// given number of threads.  A regular
+   /// expression to be used for searching
+   /// for dates is passed to each thread.
+   /// See crate::Date for more information
+   /// on the format of the regular expression.
    pub fn new(
-      thread_count   : std::num::NonZeroUsize,
+      thread_count         : std::num::NonZeroUsize,
+      regular_expression   : regex::Regex,
    ) -> Self {
       // Initialize pipes
       let mut pipe_in_send_list = Vec::with_capacity(thread_count.get());
@@ -617,14 +637,16 @@ impl DateFinderThreadPool {
             pipe_in_recv,
          ) = std::sync::mpsc::channel();
          let pipe_out_send = pipe_out_send.clone();
+         let regex_thread  = regular_expression.clone();
 
          pipe_in_send_list.push(pipe_in_send);
          std::thread::spawn(move || {
-            let recv = pipe_in_recv;
-            let send = pipe_out_send;
+            let regex   = regex_thread;
+            let recv    = pipe_in_recv;
+            let send    = pipe_out_send;
 
             while let Ok(path) = recv.recv() {
-               send.send(FileDateList::from_file(path)).expect(
+               send.send(FileDateList::from_file_with(path, &regex)).expect(
                   "Broken outgoing pipe",
                );
             }
